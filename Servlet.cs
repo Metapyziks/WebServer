@@ -8,6 +8,17 @@ using System.Threading.Tasks;
 
 namespace WebServer
 {
+    [AttributeUsage(AttributeTargets.Class)]
+    public class ServletURLAttribute : Attribute
+    {
+        public String[] URLs { get; private set; }
+
+        public ServletURLAttribute(params String[] urls)
+        {
+            URLs = urls;
+        }
+    }
+
     public abstract class Servlet
     {
         protected HttpListenerRequest Request { get; private set; }

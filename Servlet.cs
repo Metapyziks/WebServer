@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,8 +27,6 @@ namespace WebServer
 
         protected StreamWriter Writer { get; private set; }
 
-        protected Func<String, String, String> Attrib { get; private set; }
-
         public String Ln
         {
             get { return Tag("br"); }
@@ -48,29 +47,31 @@ namespace WebServer
             return String.Format(format, args);
         }
 
+        public Dictionary<String, Object> Attribs(params Expression<Func<String, Object>>[] args)
+        {
+            var dict = new Dictionary<String, Object>();
+            foreach (var arg in args) {
+                dict.Add(arg.Parameters.First().Name, arg.Compile()(String.Empty));
+            }
+            return dict;
+        }
+
         public String Tag(String name)
         {
             return String.Format("<{0} />", name);
         }
 
-        public String Tag(String name, String body)
+        public String Tag(String name, params String[] body)
         {
-            return String.Format("<{0}>{1}</{0}>", name, body);
+            return String.Format("<{0}>{1}</{0}>", name, String.Join(String.Empty, body));
         }
 
-        public String Tag(String name, Func<String> body)
+        public String Tag(String name, Dictionary<String, Object> attribs, params String[] body)
         {
-            var attribDict = new Dictionary<String, String>();
-            var oldAttrib = Attrib;
+            var attribStrings = attribs.Select(kv => String.Format(" {0}=\"{1}\"", kv.Key, kv.Value));
+            var attribsJoined = String.Join(String.Empty, attribStrings);
 
-            Attrib = (key, value) => { attribDict.Add(key, value); return String.Empty; };
-            var contents = body();
-            Attrib = oldAttrib;
-
-            var attribStrings = attribDict.Select(kv => String.Format(" {0}=\"{1}\"", kv.Key, kv.Value));
-            var attribs = String.Join(String.Empty, attribStrings);
-
-            return String.Format("<{0}{1}>{2}</{0}>", name, attribs, contents);
+            return String.Format("<{0}{1}>{2}</{0}>", name, attribsJoined, String.Join(String.Empty, body));
         }
 
         protected abstract void OnService();

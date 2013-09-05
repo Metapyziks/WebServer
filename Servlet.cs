@@ -36,13 +36,6 @@ namespace WebServer
             }
         }
 
-        public void this[String str]
-        {
-            get {
-                Writer.Write(str);
-            }
-        }
-
         public String Tag(String name)
         {
             return String.Format("<{0} />", name);

@@ -28,6 +28,11 @@ namespace WebServer
             DefaultServlet = new Default404Servlet();
         }
 
+        public void AddPrefix(String uriPrefix)
+        {
+            _listener.Prefixes.Add(uriPrefix);
+        }
+
         public void BindServletsInAssembly(Assembly assembly)
         {
             var types = assembly.GetTypes()

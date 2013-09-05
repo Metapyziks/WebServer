@@ -18,12 +18,7 @@ namespace WebServer
                     Tag("body")(
                         Tag("p")(
                             "The URL you requested could not be found", Ln,
-                            Tag("code")(Request.RawUrl), Ln,
-                            Dynamic(() => {
-                                for (int i = 0; i < 10; ++i) {
-                                    Write(i, Ln);
-                                }
-                            })
+                            Tag("code")(Request.RawUrl)
                         )
                     )
                 )

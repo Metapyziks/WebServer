@@ -29,12 +29,19 @@ namespace WebServer
         protected HttpListenerResponse Response { get; private set; }
 
         private StreamWriter _streamWriter;
+        private int _indentDepth;
 
         protected WriteDelegate Write { get; private set; }
 
-        public String Ln
+        protected String Ln
         {
             get { return EmptyTag("br"); }
+        }
+
+        protected String Indent(int depth)
+        {
+            var spaces = Enumerable.Range(0, _indentDepth * 2).Select(x => ' ');
+            return String.Join(String.Empty, spaces);
         }
 
         public void Service(HttpListenerRequest request, HttpListenerResponse response)
@@ -43,16 +50,14 @@ namespace WebServer
             Response = response;
 
             using (_streamWriter = new StreamWriter(Response.OutputStream)) {
-                Write = x => { foreach (var str in x) _streamWriter.Write(str); };
+                Write = x => {
+                    foreach (var str in x) {
+                        _streamWriter.WriteLine("{0}{1}", Indent(_indentDepth), str);
+                    }
+                };
                 OnService();
             }
         }
-
-        public String Format(String format, params object[] args)
-        {
-            return String.Format(format, args);
-        }
-
 
         private String JoinAttributes(Expression<Func<String, Object>>[] attributes)
         {
@@ -61,24 +66,39 @@ namespace WebServer
             return String.Join(String.Empty, attribStrings);
         }
 
-        public String EmptyTag(String name, params Expression<Func<String, Object>>[] attributes)
+        protected String Format(String format, params object[] args)
+        {
+            return String.Format(format, args);
+        }
+
+        protected String EmptyTag(String name, params Expression<Func<String, Object>>[] attributes)
         {
             var attribsJoined = JoinAttributes(attributes);
             return String.Format("<{0}{1} />", name, attribsJoined);
         }
 
-        public BodyDelegate Tag(String name, params Expression<Func<String, Object>>[] attributes)
+        protected BodyDelegate Tag(String name, params Expression<Func<String, Object>>[] attributes)
         {
             var attribsJoined = JoinAttributes(attributes);
-            return (body) => String.Format("<{0}{1}>{2}</{0}>",
-                name, attribsJoined, String.Join(String.Empty, body));
+            ++_indentDepth;
+            return (body) => {
+                var bodyJoined = String.Join(String.Empty, body.Select(x =>
+                    String.Format("{0}{1}{2}", Indent(_indentDepth), x, Environment.NewLine)));
+                --_indentDepth;
+                return String.Format("<{0}{1}>{3}{2}{4}</{0}>", name, attribsJoined, bodyJoined,
+                    Environment.NewLine, Indent(_indentDepth));
+            };
         }
 
-        public String Dynamic(Action body)
+        protected String Dynamic(Action body)
         {
-            var oldWrite = Write;
             var sb = new StringBuilder();
-            Write = x => { foreach (var str in x) sb.Append(str); };
+            var oldWrite = Write;
+            Write = x => {
+                foreach (var str in x) {
+                    sb.AppendFormat("{0}{1}{2}", Indent(_indentDepth), str.ToString(), Environment.NewLine);
+                }
+            };
             body();
             Write = oldWrite;
             return sb.ToString();

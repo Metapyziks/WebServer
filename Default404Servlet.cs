@@ -11,6 +11,7 @@ namespace WebServer
         protected override void OnService()
         {
             Write(
+                DocType("html"),
                 Tag("html", lang => "en", another => "blah")(
                     Tag("head")(
                         Tag("title")("Error 404")

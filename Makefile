@@ -7,10 +7,8 @@ DEF = LINUX
 BINDIR = ../bin
 
 SRC = \
-	$(SRCDIR)/Server.cs \
-	$(SRCDIR)/Servlet.cs \
-	$(SRCDIR)/Default404Servlet.cs \
-	$(SRCDIR)/Properties/*.cs
+	./*.cs \
+	Properties/*.cs
 
 DEBUGBINDIR = $(BINDIR)/Debug
 RELEASEBINDIR = $(BINDIR)/Release

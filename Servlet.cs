@@ -100,8 +100,15 @@ namespace WebServer
             var sb = new StringBuilder();
             var oldWrite = Write;
             Write = x => {
+                bool first = true;
                 foreach (var str in x) {
-                    sb.AppendFormat("{0}{1}{2}", Indent(_indentDepth), str.ToString(), Environment.NewLine);
+                    if (first) {
+                        first = false;
+                    } else {
+                        sb.Append(Environment.NewLine);
+                        sb.Append(Indent(_indentDepth));
+                    }
+                    sb.Append(str.ToString());
                 }
             };
             body();

@@ -29,7 +29,7 @@ namespace WebServer
 
         public String Ln
         {
-            get { return Tag("br"); }
+            get { return EmptyTag("br"); }
         }
 
         public void Service(HttpListenerRequest request, HttpListenerResponse response)
@@ -47,31 +47,26 @@ namespace WebServer
             return String.Format(format, args);
         }
 
-        public Dictionary<String, Object> Attribs(params Expression<Func<String, Object>>[] args)
+        public delegate String TagDelegate(params String[] body);
+
+        private String JoinAttributes(Expression<Func<String, Object>>[] attributes)
         {
-            var dict = new Dictionary<String, Object>();
-            foreach (var arg in args) {
-                dict.Add(arg.Parameters.First().Name, arg.Compile()(String.Empty));
-            }
-            return dict;
+            var attribStrings = attributes.Select(attrib => String.Format(" {0}=\"{1}\"",
+                attrib.Parameters.First().Name, attrib.Compile()(String.Empty)));
+            return String.Join(String.Empty, attribStrings);
         }
 
-        public String Tag(String name)
+        public String EmptyTag(String name, params Expression<Func<String, Object>>[] attributes)
         {
-            return String.Format("<{0} />", name);
+            var attribsJoined = JoinAttributes(attributes);
+            return String.Format("<{0}{1} />", name, attribsJoined);
         }
 
-        public String Tag(String name, params String[] body)
+        public TagDelegate Tag(String name, params Expression<Func<String, Object>>[] attributes)
         {
-            return String.Format("<{0}>{1}</{0}>", name, String.Join(String.Empty, body));
-        }
-
-        public String Tag(String name, Dictionary<String, Object> attribs, params String[] body)
-        {
-            var attribStrings = attribs.Select(kv => String.Format(" {0}=\"{1}\"", kv.Key, kv.Value));
-            var attribsJoined = String.Join(String.Empty, attribStrings);
-
-            return String.Format("<{0}{1}>{2}</{0}>", name, attribsJoined, String.Join(String.Empty, body));
+            var attribsJoined = JoinAttributes(attributes);
+            return (body) => String.Format("<{0}{1}>{2}</{0}>",
+                name, attribsJoined, String.Join(String.Empty, body));
         }
 
         protected abstract void OnService();

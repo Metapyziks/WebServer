@@ -12,11 +12,15 @@ namespace WebServer
         {
             Writer.Write(
                 Tag("html", () =>
-                    Tag("head", () =>
-                        Tag("title", () => "Error 404")
+                    Attrib("lang", "en") +
+                    Tag("head",
+                        Tag("title", "Error 404")
                     ) +
-                    Tag("body", () =>
-                        "The URL you requested could not be found"
+                    Tag("body",
+                        Tag("p",
+                            "The URL you requested could not be found" + Ln +
+                            Tag("code", Request.RawUrl)
+                        )
                     )
                 )
             );

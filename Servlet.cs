@@ -26,6 +26,13 @@ namespace WebServer
 
         protected StreamWriter Writer { get; private set; }
 
+        protected Func<String, String, String> Attrib { get; private set; }
+
+        public String Ln
+        {
+            get { return Tag("br"); }
+        }
+
         public void Service(HttpListenerRequest request, HttpListenerResponse response)
         {
             Request = request;
@@ -36,19 +43,34 @@ namespace WebServer
             }
         }
 
+        public String Format(String format, params object[] args)
+        {
+            return String.Format(format, args);
+        }
+
         public String Tag(String name)
         {
             return String.Format("<{0} />", name);
         }
 
-        public String Tag(String name, Func<String> body)
+        public String Tag(String name, String body)
         {
-            return String.Format("<{0}>{1}</{0}>", name, body());
+            return String.Format("<{0}>{1}</{0}>", name, body);
         }
 
-        public String NewLine()
+        public String Tag(String name, Func<String> body)
         {
-            return Tag("br");
+            var attribDict = new Dictionary<String, String>();
+            var oldAttrib = Attrib;
+
+            Attrib = (key, value) => { attribDict.Add(key, value); return String.Empty; };
+            var contents = body();
+            Attrib = oldAttrib;
+
+            var attribStrings = attribDict.Select(kv => String.Format(" {0}=\"{1}\"", kv.Key, kv.Value));
+            var attribs = String.Join(String.Empty, attribStrings);
+
+            return String.Format("<{0}{1}>{2}</{0}>", name, attribs, contents);
         }
 
         protected abstract void OnService();

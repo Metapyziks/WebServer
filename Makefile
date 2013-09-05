@@ -13,15 +13,12 @@ SRC = \
 DEBUGBINDIR = $(BINDIR)/Debug
 RELEASEBINDIR = $(BINDIR)/Release
 
-SYSLIBS = System.Data.dll,System.Core.dll,System.Web.dll
-SQLLIB = Mono.Data.Sqlite.dll
-
 TARGET = WebServer.dll
 
 release:
 	mkdir -p $(RELEASEBINDIR)
 	rm -f $(RELEASEBINDIR)/$(TARGET)
-	$(CSC) -langversion:$(CSVERSION) $(SRC) -r:$(SYSLIBS),$(SQLLIB) -d:$(DEF) \
+	$(CSC) -langversion:$(CSVERSION) $(SRC) -d:$(DEF) \
 		-out:$(RELEASEBINDIR)/$(TARGET) -target:library
 
 debug:

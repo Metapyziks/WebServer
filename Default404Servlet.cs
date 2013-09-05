@@ -10,7 +10,7 @@ namespace WebServer
     {
         protected override void OnService()
         {
-            Writer.Write(
+            Write(
                 Tag("html", lang => "en", another => "blah")(
                     Tag("head")(
                         Tag("title")("Error 404")
@@ -18,7 +18,12 @@ namespace WebServer
                     Tag("body")(
                         Tag("p")(
                             "The URL you requested could not be found", Ln,
-                            Tag("code")(Request.RawUrl)
+                            Tag("code")(Request.RawUrl), Ln,
+                            Dynamic(() => {
+                                for (int i = 0; i < 10; ++i) {
+                                    Write(i, Ln);
+                                }
+                            })
                         )
                     )
                 )

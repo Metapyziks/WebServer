@@ -22,10 +22,15 @@ namespace WebServer
 
     public abstract class Servlet
     {
+        public delegate void WriteDelegate(params Object[] body);
+        public delegate String BodyDelegate(params Object[] body);
+
         protected HttpListenerRequest Request { get; private set; }
         protected HttpListenerResponse Response { get; private set; }
 
-        protected StreamWriter Writer { get; private set; }
+        private StreamWriter _streamWriter;
+
+        protected WriteDelegate Write { get; private set; }
 
         public String Ln
         {
@@ -37,7 +42,8 @@ namespace WebServer
             Request = request;
             Response = response;
 
-            using (Writer = new StreamWriter(Response.OutputStream)) {
+            using (_streamWriter = new StreamWriter(Response.OutputStream)) {
+                Write = x => { foreach (var str in x) _streamWriter.Write(str); };
                 OnService();
             }
         }
@@ -47,7 +53,6 @@ namespace WebServer
             return String.Format(format, args);
         }
 
-        public delegate String TagDelegate(params String[] body);
 
         private String JoinAttributes(Expression<Func<String, Object>>[] attributes)
         {
@@ -62,11 +67,21 @@ namespace WebServer
             return String.Format("<{0}{1} />", name, attribsJoined);
         }
 
-        public TagDelegate Tag(String name, params Expression<Func<String, Object>>[] attributes)
+        public BodyDelegate Tag(String name, params Expression<Func<String, Object>>[] attributes)
         {
             var attribsJoined = JoinAttributes(attributes);
             return (body) => String.Format("<{0}{1}>{2}</{0}>",
                 name, attribsJoined, String.Join(String.Empty, body));
+        }
+
+        public String Dynamic(Action body)
+        {
+            var oldWrite = Write;
+            var sb = new StringBuilder();
+            Write = x => { foreach (var str in x) sb.Append(str); };
+            body();
+            Write = oldWrite;
+            return sb.ToString();
         }
 
         protected abstract void OnService();

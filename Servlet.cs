@@ -36,6 +36,28 @@ namespace WebServer
             }
         }
 
+        public void this[String str]
+        {
+            get {
+                Writer.Write(str);
+            }
+        }
+
+        public String Tag(String name)
+        {
+            return String.Format("<{0} />", name);
+        }
+
+        public String Tag(String name, Func<String> body)
+        {
+            return String.Format("<{0}>{1}</{0}>", name, body());
+        }
+
+        public String NewLine()
+        {
+            return Tag("br");
+        }
+
         protected abstract void OnService();
     }
 }

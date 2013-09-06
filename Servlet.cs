@@ -53,7 +53,12 @@ namespace WebServer
                         _streamWriter.WriteLine("{0}{1}", Indent(_indentDepth), str);
                     }
                 };
-                OnService();
+                try {
+                    OnService();
+                } catch (Exception e) {
+                    Console.WriteLine(e);
+                    Console.WriteLine(e.StackTrace);
+                }
             }
         }
 

@@ -100,7 +100,6 @@ namespace WebServer
             while (_listener.IsListening) {
                 var context = _listener.GetContext();
                 var servlet = CreateServlet(context.Request.RawUrl);
-
                 servlet.Service(context.Request, context.Response);
             }
 

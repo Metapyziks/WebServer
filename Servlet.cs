@@ -20,8 +20,32 @@ namespace WebServer
 
     public abstract class Servlet
     {
+        protected static String[] SplitURL(String url)
+        {
+            if (url.StartsWith("/")) {
+                url = url.Substring(1);
+            }
+
+            int queryStart = url.IndexOf('?');
+            if (queryStart != -1) {
+                url = url.Substring(0, queryStart);
+            }
+
+            return url.Split('/');
+        }
+
+        protected static String URLRelativeTo(String url, String root)
+        {
+            int length = root.EndsWith("/") ? root.Length : root.Length + 1;
+            return url.Substring(length);
+        }
+
         public delegate void WriteDelegate(params Object[] body);
         public delegate String BodyDelegate(params Object[] body);
+
+        public Server Server { get; internal set; }
+
+        protected String[] URLParts { get; private set; }
 
         protected HttpListenerRequest Request { get; private set; }
         protected HttpListenerResponse Response { get; private set; }
@@ -46,6 +70,8 @@ namespace WebServer
         {
             Request = request;
             Response = response;
+
+            Response.ContentType = "text/html";
 
             using (_streamWriter = new StreamWriter(Response.OutputStream)) {
                 Write = x => {

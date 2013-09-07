@@ -11,7 +11,10 @@ namespace WebServer
         private Dictionary<String, Type> _boundServlets;
         private HttpListener _listener;
 
+        public String ResourceRootUrl { get; set; }
+
         public Servlet DefaultServlet { get; set; }
+        public DefaultResourceServlet ResourceServlet { get; set; }
 
         public bool IsListening
         {
@@ -23,7 +26,10 @@ namespace WebServer
             _boundServlets = new Dictionary<String, Type>();
             _listener = new HttpListener();
 
+            ResourceRootUrl = "/res";
+
             DefaultServlet = new Default404Servlet();
+            ResourceServlet = new DefaultResourceServlet();
         }
 
         public void AddPrefix(String uriPrefix)
@@ -84,6 +90,8 @@ namespace WebServer
                     var type = _boundServlets[url];
                     var ctor = type.GetConstructor(new Type[0]);
                     return (Servlet) ctor.Invoke(new Object[0]);
+                } else if (url == ResourceRootUrl) {
+                    return ResourceServlet;
                 }
 
                 int divider = url.LastIndexOf('/');
@@ -100,6 +108,7 @@ namespace WebServer
             while (_listener.IsListening) {
                 var context = _listener.GetContext();
                 var servlet = CreateServlet(context.Request.RawUrl);
+                servlet.Server = this;
                 servlet.Service(context.Request, context.Response);
             }
 

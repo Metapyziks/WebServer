@@ -24,6 +24,7 @@ namespace WebServer
             if (ResourceDirectory != null) {
                 var url = URLRelativeTo(Request.RawUrl, Server.ResourceRootUrl);
                 var path = Path.GetFullPath(ResourceDirectory + "/" + url);
+                Console.WriteLine(path);
                 var ext = Path.GetExtension(path);
 
                 if (_sContentTypes.ContainsKey(ext) && File.Exists(path)) {

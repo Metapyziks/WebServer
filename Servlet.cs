@@ -82,7 +82,7 @@ namespace WebServer
                 try {
                     OnService();
                 } catch (Exception e) {
-                    Console.WriteLine(e);
+                    Console.WriteLine("[{0}] {1}", DateTime.Now, e);
                     Console.WriteLine(e.StackTrace);
                 }
             }

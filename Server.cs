@@ -95,7 +95,7 @@ namespace WebServer
                 }
 
                 int divider = url.LastIndexOf('/');
-                url = url.Substring(0, divider);
+                url = url.Substring(0, divider == -1 ? 0 : divider);
             } while (url.Length > 0);
 
             return DefaultServlet;

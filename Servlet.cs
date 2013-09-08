@@ -36,7 +36,7 @@ namespace WebServer
 
         protected static String URLRelativeTo(String url, String root)
         {
-            int length = root.EndsWith("/") ? root.Length : root.Length + 1;
+            int length = root.EndsWith("/") || url.Length <= root.Length ? root.Length : root.Length + 1;
             return url.Substring(length);
         }
 

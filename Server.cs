@@ -106,10 +106,17 @@ namespace WebServer
             _listener.Start();
 
             while (_listener.IsListening) {
-                var context = _listener.GetContext();
-                var servlet = CreateServlet(context.Request.RawUrl);
-                servlet.Server = this;
-                servlet.Service(context.Request, context.Response);
+                HttpListenerContext context = null;
+                try {
+                    context = _listener.GetContext();
+                    var servlet = CreateServlet(context.Request.RawUrl);
+                    servlet.Server = this;
+                    servlet.Service(context.Request, context.Response);
+                } catch {
+                    if (context != null) {
+                        context.Response.Close();
+                    }
+                }
             }
 
             _listener.Close();

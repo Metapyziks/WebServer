@@ -8,7 +8,7 @@ namespace WebServer
 {
     internal class ScheduledJob
     {
-        private Action job;
+        private Action<Server> job;
 
         internal String Identifier { get; private set; }
 
@@ -20,7 +20,8 @@ namespace WebServer
             get { return DateTime.Now >= NextTime; }
         }
 
-        internal ScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action job)
+        internal ScheduledJob(String ident, DateTime nextTime,
+            TimeSpan interval, Action<Server> job)
         {
             Identifier = ident;
 
@@ -30,19 +31,16 @@ namespace WebServer
             this.job = job;
         }
 
-        internal void Perform()
+        internal void Perform(Server server)
         {
             NextTime = DateTime.Now + Interval;
 
             try {
-                Console.WriteLine("[{0}] Performing scheduled job {1}",
-                    DateTime.Now, Identifier);
-                job();
-                Console.WriteLine("[{0}] Completed scheduled job {1}",
-                    DateTime.Now, Identifier);
+                server.Log("Performing {0}", Identifier);
+                job(server);
+                server.Log("Completed {0}", Identifier);
             } catch (Exception e) {
-                Console.WriteLine("[{0}] {1}", DateTime.Now, e);
-                Console.WriteLine(e.StackTrace);
+                server.Log(e);
             }
         }
     }

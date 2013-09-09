@@ -106,7 +106,7 @@ namespace WebServer
             return DefaultServlet;
         }
 
-        public void AddScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action job)
+        public void AddScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action<Server> job)
         {
             _scheduledJobs.Add(nextTime, new ScheduledJob(ident, nextTime, interval, job));
         }
@@ -117,7 +117,7 @@ namespace WebServer
 
             var job = _scheduledJobs.First().Value;
             if (job.ShouldPerform) {
-                job.Perform();
+                job.Perform(this);
                 _scheduledJobs.RemoveAt(0);
                 _scheduledJobs.Add(job.NextTime, job);
                 return true;
@@ -153,6 +153,17 @@ namespace WebServer
             }
 
             _listener.Close();
+        }
+
+        public virtual void Log(Exception e)
+        {
+            Console.WriteLine("[{0}] {1}", DateTime.Now, e);
+            Console.WriteLine(e.StackTrace);
+        }
+
+        public virtual void Log(String format, params Object[] args)
+        {
+            Console.WriteLine("[{0}] {1}", DateTime.Now, String.Format(format, args));
         }
     }
 }

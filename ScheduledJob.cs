@@ -30,7 +30,7 @@ namespace WebServer
             this.job = job;
         }
 
-        public void Perform()
+        internal void Perform()
         {
             NextTime = DateTime.Now + Interval;
 

@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Threading;
 
 namespace WebServer
 {
     public class Server
     {
         private Dictionary<String, Type> _boundServlets;
+        private SortedList<DateTime, ScheduledJob> _scheduledJobs;
+
         private HttpListener _listener;
 
         public String ResourceRootUrl { get; set; }
@@ -24,6 +27,8 @@ namespace WebServer
         public Server()
         {
             _boundServlets = new Dictionary<String, Type>();
+            _scheduledJobs = new SortedList<DateTime, ScheduledJob>();
+
             _listener = new HttpListener();
 
             ResourceRootUrl = "/res";
@@ -101,6 +106,26 @@ namespace WebServer
             return DefaultServlet;
         }
 
+        public void AddScheduledJob(ScheduledJob job)
+        {
+            _scheduledJobs.Add(job.NextTime, job);
+        }
+
+        private bool PollScheduledJobPool()
+        {
+            if (_scheduledJobs.Count == 0) return false;
+
+            var job = _scheduledJobs.First().Value;
+            if (job.NextTime >= DateTime.Now) {
+                job.Perform();
+                _scheduledJobs.RemoveAt(0);
+                _scheduledJobs.Add(job.NextTime, job);
+                return true;
+            }
+
+            return false;
+        }
+
         public void Run()
         {
             _listener.Start();
@@ -108,7 +133,15 @@ namespace WebServer
             while (_listener.IsListening) {
                 HttpListenerContext context = null;
                 try {
-                    context = _listener.GetContext();
+                    context = null;
+                    var ctxTask = _listener.GetContextAsync();
+
+                    while (!ctxTask.IsCompleted) {
+                        if (!PollScheduledJobPool()) Thread.Yield();
+                    }
+
+                    context = ctxTask.Result;
+
                     var servlet = CreateServlet(context.Request.RawUrl);
                     servlet.Server = this;
                     servlet.Service(context.Request, context.Response);

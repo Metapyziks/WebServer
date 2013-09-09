@@ -41,6 +41,7 @@
   <ItemGroup>
     <Compile Include="Default404Servlet.cs" />
     <Compile Include="DefaultResourceServlet.cs" />
+    <Compile Include="ScheduledJob.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Servlet.cs" />

@@ -6,21 +6,21 @@ using System.Threading.Tasks;
 
 namespace WebServer
 {
-    public class ScheduledJob
+    internal class ScheduledJob
     {
         private Action job;
 
-        public String Identifier { get; private set; }
+        internal String Identifier { get; private set; }
 
-        public DateTime NextTime { get; private set; }
-        public TimeSpan Interval { get; private set; }
+        internal DateTime NextTime { get; private set; }
+        internal TimeSpan Interval { get; private set; }
 
-        public bool ShouldPerform
+        internal bool ShouldPerform
         {
             get { return DateTime.Now >= NextTime; }
         }
 
-        public ScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action job)
+        internal ScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action job)
         {
             Identifier = ident;
 
@@ -35,11 +35,13 @@ namespace WebServer
             NextTime = DateTime.Now + Interval;
 
             try {
-                job();
-            } catch (Exception e) {
-                Console.WriteLine("[{0}] Exception thrown while performing scheduled job {1}:",
+                Console.WriteLine("[{0}] Performing scheduled job {1}",
                     DateTime.Now, Identifier);
-                Console.WriteLine(e);
+                job();
+                Console.WriteLine("[{0}] Completed scheduled job {1}",
+                    DateTime.Now, Identifier);
+            } catch (Exception e) {
+                Console.WriteLine("[{0}] {1}", DateTime.Now, e);
                 Console.WriteLine(e.StackTrace);
             }
         }

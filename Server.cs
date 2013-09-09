@@ -106,9 +106,9 @@ namespace WebServer
             return DefaultServlet;
         }
 
-        public void AddScheduledJob(ScheduledJob job)
+        public void AddScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action job)
         {
-            _scheduledJobs.Add(job.NextTime, job);
+            _scheduledJobs.Add(nextTime, new ScheduledJob(ident, nextTime, interval, job));
         }
 
         private bool PollScheduledJobPool()
@@ -116,7 +116,7 @@ namespace WebServer
             if (_scheduledJobs.Count == 0) return false;
 
             var job = _scheduledJobs.First().Value;
-            if (job.NextTime >= DateTime.Now) {
+            if (job.ShouldPerform) {
                 job.Perform();
                 _scheduledJobs.RemoveAt(0);
                 _scheduledJobs.Add(job.NextTime, job);

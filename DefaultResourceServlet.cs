@@ -13,7 +13,8 @@ namespace WebServer
             { ".js", "application/javascript" },
             { ".png", "image/png" },
             { ".jpg", "image/jpeg" },
-            { ".ttf", "font/ttf" }
+            { ".ttf", "font/ttf" },
+            { ".ico", "image/x-icon" }
         };
 
         public String ResourceDirectory { get; set; }
@@ -22,7 +23,11 @@ namespace WebServer
         protected override void OnService()
         {
             if (ResourceDirectory != null) {
-                var url = URLRelativeTo(Request.RawUrl, Server.ResourceRootUrl);
+                var url = Request.RawUrl;
+                if (url.StartsWith(Server.ResourceRootUrl)) {
+                    url = URLRelativeTo(url, Server.ResourceRootUrl);
+                }
+
                 var path = Path.GetFullPath(ResourceDirectory + "/" + url);
                 var ext = Path.GetExtension(path);
 

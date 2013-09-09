@@ -35,6 +35,8 @@ namespace WebServer
 
             DefaultServlet = new Default404Servlet();
             ResourceServlet = new DefaultResourceServlet();
+
+            BindServletToURL<DefaultResourceServlet>("/favicon.ico");
         }
 
         public void AddPrefix(String uriPrefix)
@@ -93,6 +95,10 @@ namespace WebServer
             do {
                 if (_boundServlets.ContainsKey(url)) {
                     var type = _boundServlets[url];
+                    if (type == ResourceServlet.GetType()) {
+                        return ResourceServlet;
+                    }
+
                     var ctor = type.GetConstructor(new Type[0]);
                     return (Servlet) ctor.Invoke(new Object[0]);
                 } else if (url == ResourceRootUrl) {

@@ -18,6 +18,8 @@ namespace WebServer
     {
         protected static String[] SplitURL(String url)
         {
+            if (url.Length == 0) return new String[0];
+
             if (url.StartsWith("/")) {
                 url = url.Substring(1);
             }

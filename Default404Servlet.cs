@@ -1,7 +1,7 @@
 ﻿
 namespace WebServer
 {
-    public class Default404Servlet : Servlet
+    public class Default404Servlet : HTMLServlet
     {
         protected override void OnService()
         {

@@ -143,7 +143,7 @@ namespace WebServer
                     var ctxTask = _listener.GetContextAsync();
 
                     while (!ctxTask.IsCompleted) {
-                        if (!PollScheduledJobPool()) Thread.Yield();
+                        if (!PollScheduledJobPool()) Thread.Sleep(1);
                     }
 
                     context = ctxTask.Result;

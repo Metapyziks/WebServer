@@ -125,7 +125,9 @@ namespace WebServer
             if (job.ShouldPerform) {
                 job.Perform(this);
                 _scheduledJobs.RemoveAt(0);
-                _scheduledJobs.Add(job.NextTime, job);
+                if (!job.OnceOnly) {
+                    _scheduledJobs.Add(job.NextTime, job);
+                }
                 return true;
             }
 

@@ -16,6 +16,11 @@ namespace WebServer
             get { return DateTime.Now >= NextTime; }
         }
 
+        internal bool OnceOnly
+        {
+            get { return Interval == TimeSpan.Zero; }
+        }
+
         internal ScheduledJob(String ident, DateTime nextTime,
             TimeSpan interval, Action<Server> job)
         {
@@ -29,7 +34,11 @@ namespace WebServer
 
         internal void Perform(Server server)
         {
-            NextTime = DateTime.Now + Interval;
+            if (!OnceOnly) {
+                NextTime = DateTime.Now + Interval;
+            } else {
+                NextTime = DateTime.MaxValue;
+            }
 
             try {
                 server.Log("Performing {0}", Identifier);

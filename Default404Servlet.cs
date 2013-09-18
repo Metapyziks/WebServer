@@ -5,6 +5,8 @@ namespace WebServer
     {
         protected override void OnService()
         {
+            Response.StatusCode = 404;
+
             Write(
                 DocType("html"),
                 Tag("html", lang => "en", another => "blah")(

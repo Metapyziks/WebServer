@@ -69,7 +69,8 @@ namespace WebServer
             ++_indentDepth;
             return (body) => {
                 var bodyJoined = String.Join(String.Empty, body.Select(x =>
-                    String.Format("{0}{1}{2}", Indent(_indentDepth), x, Environment.NewLine)));
+                    String.Format("{0}{1}{2}", Indent(_indentDepth),
+                    x is BodyDelegate ? ((BodyDelegate) x)() : x, Environment.NewLine)));
                 --_indentDepth;
                 return String.Format("<{0}{1}>{3}{2}{4}</{0}>", name, attribsJoined, bodyJoined,
                     Environment.NewLine, Indent(_indentDepth));
@@ -94,7 +95,7 @@ namespace WebServer
                         sb.Append(Environment.NewLine);
                         sb.Append(Indent(_indentDepth));
                     }
-                    sb.Append(str.ToString());
+                    sb.Append(str is BodyDelegate ? ((BodyDelegate) str)() : str.ToString());
                 }
             };
             body();

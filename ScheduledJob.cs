@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 
 namespace WebServer
 {
@@ -11,6 +12,8 @@ namespace WebServer
         internal DateTime NextTime { get; private set; }
         internal TimeSpan Interval { get; private set; }
 
+        internal Timer Timer { get; private set; }
+
         internal bool ShouldPerform
         {
             get { return DateTime.Now >= NextTime; }
@@ -21,25 +24,43 @@ namespace WebServer
             get { return Interval == TimeSpan.Zero; }
         }
 
-        internal ScheduledJob(String ident, DateTime nextTime,
+        internal ScheduledJob(Server server, String ident, DateTime nextTime,
             TimeSpan interval, Action<Server> job)
         {
+            if (interval > TimeSpan.Zero) {
+                while (nextTime < DateTime.Now) nextTime += interval;
+            }
+
             Identifier = ident;
 
             NextTime = nextTime;
             Interval = interval;
 
             this.job = job;
+
+            Timer = new Timer(Perform, server, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+            UpdateTimer();
         }
 
-        internal void Perform(Server server)
+        private void UpdateTimer()
         {
-            if (!OnceOnly) {
-                NextTime = DateTime.Now + Interval;
-            } else {
-                NextTime = DateTime.MaxValue;
+            var delay = NextTime - DateTime.Now;
+            if (delay.TotalMinutes > 1.0) {
+                delay = TimeSpan.FromMinutes(1.0);
             }
 
+            Timer.Change(delay, Timeout.InfiniteTimeSpan);
+        }
+
+        private void Perform(Object state)
+        {
+            if (!ShouldPerform) {
+                UpdateTimer();
+                return;
+            }
+
+            var server = (Server) state;
             try {
                 server.Log("Performing {0}", Identifier);
                 job(server);
@@ -47,6 +68,20 @@ namespace WebServer
             } catch (Exception e) {
                 server.Log(e);
             }
+
+            if (OnceOnly) {
+                Cancel();
+            } else {
+                NextTime = DateTime.Now + Interval;
+                UpdateTimer();
+            }
+        }
+
+        internal void Cancel()
+        {
+            NextTime = DateTime.MaxValue;
+            Timer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            Timer.Dispose();
         }
     }
 }

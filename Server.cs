@@ -9,10 +9,18 @@ namespace WebServer
 {
     public class Server
     {
-        private Dictionary<String, Type> _boundServlets;
-        private SortedList<DateTime, ScheduledJob> _scheduledJobs;
+        private readonly Dictionary<String, Type> _boundServlets;
+        private readonly Queue<HttpListenerContext> _requestQueue;
+        private readonly Dictionary<String, ScheduledJob> _scheduledJobs;
 
-        private HttpListener _listener;
+        private readonly HttpListener _listener;
+
+        private readonly int _maxWorkers;
+        private readonly Thread[] _workers;
+        private Thread _mainThread;
+
+        private readonly ManualResetEvent _ready;
+        private readonly ManualResetEvent _stop;
 
         public String ResourceRootUrl { get; set; }
 
@@ -24,12 +32,19 @@ namespace WebServer
             get { return _listener.IsListening; }
         }
 
-        public Server()
+        public Server(int maxWorkers = 1)
         {
             _boundServlets = new Dictionary<String, Type>();
-            _scheduledJobs = new SortedList<DateTime, ScheduledJob>();
+            _requestQueue = new Queue<HttpListenerContext>();
+            _scheduledJobs = new Dictionary<String, ScheduledJob>();
 
             _listener = new HttpListener();
+
+            _maxWorkers = Math.Max(1, maxWorkers);
+            _workers = new Thread[_maxWorkers];
+
+            _ready = new ManualResetEvent(false);
+            _stop = new ManualResetEvent(false);
 
             ResourceRootUrl = "/res";
 
@@ -37,6 +52,17 @@ namespace WebServer
             ResourceServlet = new DefaultResourceServlet();
 
             BindServletToURL<DefaultResourceServlet>("/favicon.ico");
+        }
+
+        public void Stop()
+        {
+            _stop.Set();
+            foreach (var worker in _workers) {
+                if (worker != Thread.CurrentThread) worker.Join();
+            }
+            foreach (var job in _scheduledJobs) {
+                job.Value.Cancel();
+            }
         }
 
         public void AddPrefix(String uriPrefix)
@@ -114,49 +140,61 @@ namespace WebServer
 
         public void AddScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action<Server> job)
         {
-            _scheduledJobs.Add(nextTime, new ScheduledJob(ident, nextTime, interval, job));
+            var scheduledJob = new ScheduledJob(this, ident, nextTime, interval, job);
+            _scheduledJobs.Add(ident, scheduledJob);
         }
 
-        private bool PollScheduledJobPool()
+        private void WorkerLoop()
         {
-            if (_scheduledJobs.Count == 0) return false;
-
-            var job = _scheduledJobs.First().Value;
-            if (job.ShouldPerform) {
-                job.Perform(this);
-                _scheduledJobs.RemoveAt(0);
-                if (!job.OnceOnly) {
-                    _scheduledJobs.Add(job.NextTime, job);
+            var waitHandles = new[] { _ready, _stop };
+            while (WaitHandle.WaitAny(waitHandles) == 0) {
+                HttpListenerContext context;
+                lock (_requestQueue) {
+                    if (_requestQueue.Count > 0) {
+                        context = _requestQueue.Dequeue();
+                    } else {
+                        _ready.Reset();
+                        return;
+                    }
                 }
-                return true;
-            }
 
-            return false;
+                try {
+                    var servlet = CreateServlet(context.Request.RawUrl);
+                    servlet.Server = this;
+                    servlet.Service(context.Request, context.Response);
+                } finally {
+                    if (context != null) {
+                        context.Response.Close();
+                    }
+                }        
+            }
         }
 
         public void Run()
         {
+            _mainThread = Thread.CurrentThread;
+
             _listener.Start();
 
+            for (int i = 0; i < _maxWorkers; ++i) {
+                _workers[i] = new Thread(WorkerLoop);
+                _workers[i].Start();
+            }
+
             while (_listener.IsListening) {
-                HttpListenerContext context = null;
-                try {
-                    context = null;
-                    var ctxTask = _listener.GetContextAsync();
-
-                    while (!ctxTask.IsCompleted) {
-                        if (!PollScheduledJobPool()) Thread.Sleep(1);
+                var ctx = _listener.BeginGetContext(res => {
+                    try {
+                        lock (_requestQueue) {
+                            _requestQueue.Enqueue(_listener.EndGetContext(res));
+                            _ready.Set();
+                        }
+                    } catch {
+                        return;
                     }
+                }, null);
 
-                    context = ctxTask.Result;
-
-                    var servlet = CreateServlet(context.Request.RawUrl);
-                    servlet.Server = this;
-                    servlet.Service(context.Request, context.Response);
-                } catch {
-                    if (context != null) {
-                        context.Response.Close();
-                    }
+                if (WaitHandle.WaitAny(new[] { _stop, ctx.AsyncWaitHandle }) == 0) {
+                    break;
                 }
             }
 

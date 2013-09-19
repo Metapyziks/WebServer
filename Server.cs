@@ -10,56 +10,49 @@ namespace WebServer
     public class Server
     {
         private readonly Dictionary<String, Type> _boundServlets;
-        private readonly Queue<HttpListenerContext> _requestQueue;
         private readonly Dictionary<String, ScheduledJob> _scheduledJobs;
 
         private readonly HttpListener _listener;
-
-        private readonly int _maxWorkers;
-        private readonly Thread[] _workers;
-        private Thread _mainThread;
-
-        private readonly ManualResetEvent _ready;
         private readonly ManualResetEvent _stop;
+        private bool _stopped;
 
+        private Type _notFoundServlet;
+        private Type _resourceServlet;
+        
         public String ResourceRootUrl { get; set; }
-
-        public Servlet DefaultServlet { get; set; }
-        public DefaultResourceServlet ResourceServlet { get; set; }
-
+        
         public bool IsListening
         {
             get { return _listener.IsListening; }
         }
 
-        public Server(int maxWorkers = 1)
+        public Server()
         {
             _boundServlets = new Dictionary<String, Type>();
-            _requestQueue = new Queue<HttpListenerContext>();
             _scheduledJobs = new Dictionary<String, ScheduledJob>();
 
             _listener = new HttpListener();
 
-            _maxWorkers = Math.Max(1, maxWorkers);
-            _workers = new Thread[_maxWorkers];
-
-            _ready = new ManualResetEvent(false);
             _stop = new ManualResetEvent(false);
+            _stopped = false;
 
             ResourceRootUrl = "/res";
 
-            DefaultServlet = new Default404Servlet();
-            ResourceServlet = new DefaultResourceServlet();
+            _notFoundServlet = typeof(Default404Servlet);
+            _resourceServlet = typeof(DefaultResourceServlet);
 
             BindServletToURL<DefaultResourceServlet>("/favicon.ico");
+        
+            int workers; int completionPool;
+            ThreadPool.GetMaxThreads(out workers, out completionPool);
+
+            Console.WriteLine(workers);
         }
 
         public void Stop()
         {
+            _stopped = true;
             _stop.Set();
-            foreach (var worker in _workers) {
-                if (worker != Thread.CurrentThread) worker.Join();
-            }
             foreach (var job in _scheduledJobs) {
                 job.Value.Cancel();
             }
@@ -111,31 +104,46 @@ namespace WebServer
             _boundServlets.Add(url, t);
         }
 
-        protected Servlet CreateServlet(String url)
+        public void SetNotFoundServlet<T>()
+            where T : Servlet
+        {
+            _notFoundServlet = typeof(T);
+        }
+
+        public void SetResourceServlet<T>()
+        {
+            _resourceServlet = typeof(T);
+        }
+
+        public Servlet CreateNotFoundServlet()
+        {
+            var ctor = _notFoundServlet.GetConstructor(new Type[0]);
+            return (Servlet) ctor.Invoke(new Object[0]);
+        }
+
+        public Servlet CreateServlet(String url)
         {
             int queryStart = url.IndexOf('?');
             if (queryStart != -1) {
                 url = url.Substring(0, queryStart);
             }
 
+            Type type = _notFoundServlet;
             do {
                 if (_boundServlets.ContainsKey(url)) {
-                    var type = _boundServlets[url];
-                    if (type == ResourceServlet.GetType()) {
-                        return ResourceServlet;
-                    }
-
-                    var ctor = type.GetConstructor(new Type[0]);
-                    return (Servlet) ctor.Invoke(new Object[0]);
+                    type = _boundServlets[url];
+                    break;
                 } else if (url == ResourceRootUrl) {
-                    return ResourceServlet;
+                    type = _resourceServlet;
+                    break;
                 }
 
                 int divider = url.LastIndexOf('/');
                 url = url.Substring(0, divider == -1 ? 0 : divider);
             } while (url.Length > 0);
 
-            return DefaultServlet;
+            var ctor = type.GetConstructor(new Type[0]);
+            return (Servlet) ctor.Invoke(new Object[0]);
         }
 
         public void AddScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action<Server> job)
@@ -144,50 +152,31 @@ namespace WebServer
             _scheduledJobs.Add(ident, scheduledJob);
         }
 
-        private void WorkerLoop()
+        private void WorkerTask(Object state)
         {
-            var waitHandles = new[] { _ready, _stop };
-            while (WaitHandle.WaitAny(waitHandles) == 0) {
-                HttpListenerContext context;
-                lock (_requestQueue) {
-                    if (_requestQueue.Count > 0) {
-                        context = _requestQueue.Dequeue();
-                    } else {
-                        _ready.Reset();
-                        return;
-                    }
+            if (_stopped) return;
+            
+            var context = (HttpListenerContext) state;
+            try {
+                var servlet = CreateServlet(context.Request.RawUrl);
+                servlet.Server = this;
+                servlet.Service(context.Request, context.Response);
+            } finally {
+                if (context != null) {
+                    context.Response.Close();
                 }
-
-                try {
-                    var servlet = CreateServlet(context.Request.RawUrl);
-                    servlet.Server = this;
-                    servlet.Service(context.Request, context.Response);
-                } finally {
-                    if (context != null) {
-                        context.Response.Close();
-                    }
-                }        
             }
         }
 
         public void Run()
         {
-            _mainThread = Thread.CurrentThread;
-
             _listener.Start();
 
-            for (int i = 0; i < _maxWorkers; ++i) {
-                _workers[i] = new Thread(WorkerLoop);
-                _workers[i].Start();
-            }
-
-            while (_listener.IsListening) {
+            while (_listener.IsListening && !_stopped) {
                 var ctx = _listener.BeginGetContext(res => {
                     try {
-                        lock (_requestQueue) {
-                            _requestQueue.Enqueue(_listener.EndGetContext(res));
-                            _ready.Set();
-                        }
+                        var context = _listener.EndGetContext(res);
+                        ThreadPool.QueueUserWorkItem(WorkerTask, context);
                     } catch {
                         return;
                     }

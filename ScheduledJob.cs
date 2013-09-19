@@ -5,7 +5,8 @@ namespace WebServer
 {
     internal class ScheduledJob
     {
-        private Action<Server> job;
+        private Action<Server> _job;
+        private bool _canceled;
 
         internal String Identifier { get; private set; }
 
@@ -27,16 +28,13 @@ namespace WebServer
         internal ScheduledJob(Server server, String ident, DateTime nextTime,
             TimeSpan interval, Action<Server> job)
         {
-            if (interval > TimeSpan.Zero) {
-                while (nextTime < DateTime.Now) nextTime += interval;
-            }
-
             Identifier = ident;
 
             NextTime = nextTime;
             Interval = interval;
 
-            this.job = job;
+            _job = job;
+            _canceled = false;
 
             Timer = new Timer(Perform, server, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
@@ -45,16 +43,22 @@ namespace WebServer
 
         private void UpdateTimer()
         {
-            var delay = NextTime - DateTime.Now;
-            if (delay.TotalMinutes > 1.0) {
-                delay = TimeSpan.FromMinutes(1.0);
-            }
+            if (NextTime < DateTime.Now) {
+                Timer.Change(TimeSpan.Zero, Timeout.InfiniteTimeSpan);
+            } else {
+                var delay = NextTime - DateTime.Now;
+                if (delay.TotalMinutes > 1.0) {
+                    delay = TimeSpan.FromMinutes(1.0);
+                }
 
-            Timer.Change(delay, Timeout.InfiniteTimeSpan);
+                Timer.Change(delay, Timeout.InfiniteTimeSpan);
+            }
         }
 
         private void Perform(Object state)
         {
+            if (_canceled) return;
+            
             if (!ShouldPerform) {
                 UpdateTimer();
                 return;
@@ -63,7 +67,7 @@ namespace WebServer
             var server = (Server) state;
             try {
                 server.Log("Performing {0}", Identifier);
-                job(server);
+                _job(server);
                 server.Log("Completed {0}", Identifier);
             } catch (Exception e) {
                 server.Log(e);
@@ -79,6 +83,8 @@ namespace WebServer
 
         internal void Cancel()
         {
+            _canceled = true;
+
             NextTime = DateTime.MaxValue;
             Timer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
             Timer.Dispose();

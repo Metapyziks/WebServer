@@ -42,11 +42,6 @@ namespace WebServer
             _resourceServlet = typeof(DefaultResourceServlet);
 
             BindServletToURL<DefaultResourceServlet>("/favicon.ico");
-        
-            int workers; int completionPool;
-            ThreadPool.GetMaxThreads(out workers, out completionPool);
-
-            Console.WriteLine(workers);
         }
 
         public void Stop()

@@ -47,8 +47,12 @@ namespace WebServer
 
         private String JoinAttributes(Expression<Func<String, Object>>[] attributes)
         {
-            var attribStrings = attributes.Select(attrib => String.Format(" {0}=\"{1}\"",
-                attrib.Parameters.First().Name, attrib.Compile()(String.Empty)));
+            var attribStrings = attributes.Select(attrib => {
+                var key = attrib.Parameters.First().Name;
+                var value = attrib.Compile()(String.Empty);
+                if (value is bool) value = value.ToString().ToLower();
+                return String.Format(" {0}=\"{1}\"", key, value);
+            });
             return String.Join(String.Empty, attribStrings);
         }
 

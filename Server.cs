@@ -157,15 +157,16 @@ namespace WebServer
                 servlet.Server = this;
                 servlet.Service(context.Request, context.Response);
             } finally {
-                if (context != null) {
+                try {
                     context.Response.Close();
-                }
+                } catch { }
             }
         }
 
         public void Run()
         {
             _listener.Start();
+            Log("Started Listening");
 
             while (_listener.IsListening && !_stopped) {
                 var ctx = _listener.BeginGetContext(res => {
@@ -183,6 +184,7 @@ namespace WebServer
             }
 
             _listener.Close();
+            Log("Stopped Listening");
         }
 
         public virtual void Log(Exception e)

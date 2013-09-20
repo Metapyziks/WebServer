@@ -49,9 +49,10 @@ namespace WebServer
             Response = response;
 
             try {
-                OnPreService();
-                OnService();
-                OnPostService();
+                if (OnPreService()) {
+                    OnService();
+                    OnPostService();
+                }
             } catch (Exception e) {
                 Server.Log(e);
             } finally {
@@ -61,7 +62,7 @@ namespace WebServer
             }
         }
 
-        protected virtual void OnPreService() { }
+        protected virtual bool OnPreService() { return true; }
 
         protected abstract void OnService();
 

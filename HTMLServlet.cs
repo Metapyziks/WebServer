@@ -27,7 +27,7 @@ namespace WebServer
             return String.Join(String.Empty, spaces);
         }
 
-        protected override void OnPreService()
+        protected override bool OnPreService()
         {
             Response.ContentType = "text/html";
 
@@ -38,6 +38,8 @@ namespace WebServer
                     _streamWriter.WriteLine("{0}{1}", Indent(_indentDepth), str);
                 }
             };
+
+            return true;
         }
 
         protected override void OnPostService()

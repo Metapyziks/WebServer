@@ -24,7 +24,7 @@ namespace WebServer
             return String.Join(String.Empty, spaces);
         }
 
-        protected override void OnPreService()
+        protected override bool OnPreService()
         {
             Response.ContentType = "application/json";
 
@@ -34,6 +34,8 @@ namespace WebServer
                 var str = String.Join(",", x.Select(y => Format("{0}{1}", Indent(_indentDepth), y)));
                 _streamWriter.WriteLine(str);
             };
+
+            return true;
         }
 
         protected override void OnPostService()

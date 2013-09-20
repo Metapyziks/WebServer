@@ -54,7 +54,10 @@ namespace WebServer
                 OnPostService();
             } catch (Exception e) {
                 Server.Log(e);
-                Response.Close();
+            } finally {
+                try {
+                    Response.Close();
+                } catch { }
             }
         }
 

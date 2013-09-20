@@ -156,6 +156,7 @@ namespace WebServer
                 var servlet = CreateServlet(context.Request.RawUrl);
                 servlet.Server = this;
                 servlet.Service(context.Request, context.Response);
+            } catch {
             } finally {
                 try {
                     context.Response.Close();

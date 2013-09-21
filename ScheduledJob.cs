@@ -1,15 +1,19 @@
 ﻿using System;
+using System.Threading;
 
 namespace WebServer
 {
     internal class ScheduledJob
     {
-        private Action<Server> job;
+        private Action<Server> _job;
+        private bool _canceled;
 
         internal String Identifier { get; private set; }
 
         internal DateTime NextTime { get; private set; }
         internal TimeSpan Interval { get; private set; }
+
+        internal Timer Timer { get; private set; }
 
         internal bool ShouldPerform
         {
@@ -21,7 +25,7 @@ namespace WebServer
             get { return Interval == TimeSpan.Zero; }
         }
 
-        internal ScheduledJob(String ident, DateTime nextTime,
+        internal ScheduledJob(Server server, String ident, DateTime nextTime,
             TimeSpan interval, Action<Server> job)
         {
             Identifier = ident;
@@ -29,24 +33,61 @@ namespace WebServer
             NextTime = nextTime;
             Interval = interval;
 
-            this.job = job;
+            _job = job;
+            _canceled = false;
+
+            Timer = new Timer(Perform, server, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+            UpdateTimer();
         }
 
-        internal void Perform(Server server)
+        private void UpdateTimer()
         {
-            if (!OnceOnly) {
-                NextTime = DateTime.Now + Interval;
+            if (NextTime < DateTime.Now) {
+                Timer.Change(TimeSpan.Zero, Timeout.InfiniteTimeSpan);
             } else {
-                NextTime = DateTime.MaxValue;
+                var delay = NextTime - DateTime.Now;
+                if (delay.TotalMinutes > 1.0) {
+                    delay = TimeSpan.FromMinutes(1.0);
+                }
+
+                Timer.Change(delay, Timeout.InfiniteTimeSpan);
+            }
+        }
+
+        private void Perform(Object state)
+        {
+            if (_canceled) return;
+            
+            if (!ShouldPerform) {
+                UpdateTimer();
+                return;
             }
 
+            var server = (Server) state;
             try {
                 server.Log("Performing {0}", Identifier);
-                job(server);
+                _job(server);
                 server.Log("Completed {0}", Identifier);
             } catch (Exception e) {
                 server.Log(e);
             }
+
+            if (OnceOnly) {
+                Cancel();
+            } else {
+                NextTime = DateTime.Now + Interval;
+                UpdateTimer();
+            }
+        }
+
+        internal void Cancel()
+        {
+            _canceled = true;
+
+            NextTime = DateTime.MaxValue;
+            Timer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            Timer.Dispose();
         }
     }
 }

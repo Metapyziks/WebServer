@@ -15,8 +15,8 @@ namespace WebServer
             { ".ico", "image/x-icon" }
         };
 
-        public String ResourceDirectory { get; set; }
-        public bool EnableCaching { get; set; }
+        public static String ResourceDirectory { get; set; }
+        public static bool EnableCaching { get; set; }
 
         protected override void OnService()
         {
@@ -44,7 +44,7 @@ namespace WebServer
                 }
             }
 
-            Server.DefaultServlet.Service(Request, Response);
+            Server.CreateNotFoundServlet().Service(Request, Response);
         }
     }
 }

@@ -49,17 +49,20 @@ namespace WebServer
             Response = response;
 
             try {
-                OnPreService();
-                OnService();
-                OnPostService();
+                if (OnPreService()) {
+                    OnService();
+                    OnPostService();
+                }
             } catch (Exception e) {
                 Server.Log(e);
             } finally {
-                Response.OutputStream.Close();
+                try {
+                    Response.Close();
+                } catch { }
             }
         }
 
-        protected virtual void OnPreService() { }
+        protected virtual bool OnPreService() { return true; }
 
         protected abstract void OnService();
 

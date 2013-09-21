@@ -9,16 +9,18 @@ namespace WebServer
 {
     public class Server
     {
-        private Dictionary<String, Type> _boundServlets;
-        private SortedList<DateTime, ScheduledJob> _scheduledJobs;
+        private readonly Dictionary<String, Type> _boundServlets;
+        private readonly Dictionary<String, ScheduledJob> _scheduledJobs;
 
-        private HttpListener _listener;
+        private readonly HttpListener _listener;
+        private readonly ManualResetEvent _stop;
+        private bool _stopped;
 
+        private Type _notFoundServlet;
+        private Type _resourceServlet;
+        
         public String ResourceRootUrl { get; set; }
-
-        public Servlet DefaultServlet { get; set; }
-        public DefaultResourceServlet ResourceServlet { get; set; }
-
+        
         public bool IsListening
         {
             get { return _listener.IsListening; }
@@ -27,16 +29,28 @@ namespace WebServer
         public Server()
         {
             _boundServlets = new Dictionary<String, Type>();
-            _scheduledJobs = new SortedList<DateTime, ScheduledJob>();
+            _scheduledJobs = new Dictionary<String, ScheduledJob>();
 
             _listener = new HttpListener();
 
+            _stop = new ManualResetEvent(false);
+            _stopped = false;
+
             ResourceRootUrl = "/res";
 
-            DefaultServlet = new Default404Servlet();
-            ResourceServlet = new DefaultResourceServlet();
+            _notFoundServlet = typeof(Default404Servlet);
+            _resourceServlet = typeof(DefaultResourceServlet);
 
             BindServletToURL<DefaultResourceServlet>("/favicon.ico");
+        }
+
+        public void Stop()
+        {
+            _stopped = true;
+            _stop.Set();
+            foreach (var job in _scheduledJobs) {
+                job.Value.Cancel();
+            }
         }
 
         public void AddPrefix(String uriPrefix)
@@ -85,82 +99,93 @@ namespace WebServer
             _boundServlets.Add(url, t);
         }
 
-        protected Servlet CreateServlet(String url)
+        public void SetNotFoundServlet<T>()
+            where T : Servlet
+        {
+            _notFoundServlet = typeof(T);
+        }
+
+        public void SetResourceServlet<T>()
+        {
+            _resourceServlet = typeof(T);
+        }
+
+        public Servlet CreateNotFoundServlet()
+        {
+            var ctor = _notFoundServlet.GetConstructor(new Type[0]);
+            return (Servlet) ctor.Invoke(new Object[0]);
+        }
+
+        public Servlet CreateServlet(String url)
         {
             int queryStart = url.IndexOf('?');
             if (queryStart != -1) {
                 url = url.Substring(0, queryStart);
             }
 
+            Type type = _notFoundServlet;
             do {
                 if (_boundServlets.ContainsKey(url)) {
-                    var type = _boundServlets[url];
-                    if (type == ResourceServlet.GetType()) {
-                        return ResourceServlet;
-                    }
-
-                    var ctor = type.GetConstructor(new Type[0]);
-                    return (Servlet) ctor.Invoke(new Object[0]);
+                    type = _boundServlets[url];
+                    break;
                 } else if (url == ResourceRootUrl) {
-                    return ResourceServlet;
+                    type = _resourceServlet;
+                    break;
                 }
 
                 int divider = url.LastIndexOf('/');
                 url = url.Substring(0, divider == -1 ? 0 : divider);
             } while (url.Length > 0);
 
-            return DefaultServlet;
+            var ctor = type.GetConstructor(new Type[0]);
+            return (Servlet) ctor.Invoke(new Object[0]);
         }
 
         public void AddScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action<Server> job)
         {
-            _scheduledJobs.Add(nextTime, new ScheduledJob(ident, nextTime, interval, job));
+            var scheduledJob = new ScheduledJob(this, ident, nextTime, interval, job);
+            _scheduledJobs.Add(ident, scheduledJob);
         }
 
-        private bool PollScheduledJobPool()
+        private void WorkerTask(Object state)
         {
-            if (_scheduledJobs.Count == 0) return false;
-
-            var job = _scheduledJobs.First().Value;
-            if (job.ShouldPerform) {
-                job.Perform(this);
-                _scheduledJobs.RemoveAt(0);
-                if (!job.OnceOnly) {
-                    _scheduledJobs.Add(job.NextTime, job);
-                }
-                return true;
+            if (_stopped) return;
+            
+            var context = (HttpListenerContext) state;
+            try {
+                var servlet = CreateServlet(context.Request.RawUrl);
+                servlet.Server = this;
+                servlet.Service(context.Request, context.Response);
+            } catch {
+            } finally {
+                try {
+                    context.Response.Close();
+                } catch { }
             }
-
-            return false;
         }
 
         public void Run()
         {
             _listener.Start();
+            Log("Started Listening");
 
-            while (_listener.IsListening) {
-                HttpListenerContext context = null;
-                try {
-                    context = null;
-                    var ctxTask = _listener.GetContextAsync();
-
-                    while (!ctxTask.IsCompleted) {
-                        if (!PollScheduledJobPool()) Thread.Sleep(1);
+            while (_listener.IsListening && !_stopped) {
+                var ctx = _listener.BeginGetContext(res => {
+                    try {
+                        var context = _listener.EndGetContext(res);
+                        ThreadPool.QueueUserWorkItem(WorkerTask, context);
+                    } catch {
+                        return;
                     }
+                }, null);
 
-                    context = ctxTask.Result;
-
-                    var servlet = CreateServlet(context.Request.RawUrl);
-                    servlet.Server = this;
-                    servlet.Service(context.Request, context.Response);
-                } catch {
-                    if (context != null) {
-                        context.Response.Close();
-                    }
+                if (WaitHandle.WaitAny(new[] { _stop, ctx.AsyncWaitHandle }) == 0) {
+                    break;
                 }
             }
 
             _listener.Close();
+            Log("Stopped Listening");
         }
 
         public virtual void Log(Exception e)

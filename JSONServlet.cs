@@ -53,6 +53,11 @@ namespace WebServer
             return Format("\"{0}\" : {1}", key, value);
         }
 
+        protected String Pair(String key, bool value)
+        {
+            return Format("\"{0}\" : {1}", key, value.ToString().ToLower());
+        }
+
         protected String Str(object str)
         {
             return Format("\"{0}\"", str);

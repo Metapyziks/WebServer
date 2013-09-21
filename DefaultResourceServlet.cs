@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.IO;
+using System.Text;
 
 namespace WebServer
 {
@@ -15,12 +19,33 @@ namespace WebServer
             { ".ico", "image/x-icon" }
         };
 
+        private static readonly String _sETag;
+        private static readonly DateTime _sModifyDate;
+
+        static DefaultResourceServlet()
+        {
+            _sModifyDate = DateTime.Now;
+            var nonce = _sModifyDate.ToString() + Assembly.GetExecutingAssembly().GetName().Version;
+            var hashAlg = SHA256.Create();
+            var hash = hashAlg.ComputeHash(Encoding.UTF8.GetBytes(nonce));
+
+            _sETag = String.Join(String.Empty, hash.Select(x => x.ToString("x2")));
+        }
+
         public static String ResourceDirectory { get; set; }
         public static bool EnableCaching { get; set; }
 
         protected override void OnService()
         {
             if (ResourceDirectory != null) {
+                if (EnableCaching) {
+                    var etag = Request.Headers["If-None-Match"];
+                    if (etag != null && etag.Equals(_sETag)) {
+                        Response.StatusCode = 304;
+                        return;
+                    }
+                }
+
                 var url = Request.RawUrl;
                 if (url.StartsWith(Server.ResourceRootUrl)) {
                     url = URLRelativeTo(url, Server.ResourceRootUrl);
@@ -33,7 +58,7 @@ namespace WebServer
                     Response.ContentType = _sContentTypes[ext];
 
                     if (EnableCaching) {
-                        Response.AddHeader("Cache-Control", "max-age=290304000, public");
+                        Response.AddHeader("ETag", _sETag);
                     }
 
                     using (var stream = File.OpenRead(path)) {

@@ -85,10 +85,10 @@ namespace WebServer
 
         protected String DocType(params String[] args)
         {
-            return String.Format("<!DOCTYPE {0}>", String.Join(" ", args));
+            return Format("<!DOCTYPE {0}>", String.Join(" ", args));
         }
 
-        protected String Dynamic(Action body)
+        protected String Dyn(Action body)
         {
             var sb = new StringBuilder();
             var oldWrite = Write;

@@ -14,15 +14,8 @@ namespace WebServer
         public delegate String BodyDelegate(params Object[] body);
 
         private StreamWriter _streamWriter;
-        private int _indentDepth;
 
         protected WriteDelegate Write { get; private set; }
-
-        protected String Indent(int depth)
-        {
-            var spaces = Enumerable.Range(0, _indentDepth * 2).Select(x => ' ');
-            return String.Join(String.Empty, spaces);
-        }
 
         protected override bool OnPreService()
         {
@@ -31,7 +24,7 @@ namespace WebServer
             _streamWriter = new StreamWriter(Response.OutputStream);
 
             Write = x => {
-                var str = String.Join(",", x.Select(y => Format("{0}{1}", Indent(_indentDepth), y)));
+                var str = String.Join(",", x);
                 _streamWriter.WriteLine(str);
             };
 
@@ -43,35 +36,41 @@ namespace WebServer
             _streamWriter.Flush();
         }
 
+        protected String Error(String message)
+        {
+            return Object(Pair("success", false), Pair("error", Str(message)));
+        }
+
+        protected String Success(params Object[] body)
+        {
+            return Object(new Object[] { Pair("success", true) }.Concat(body).ToArray() );
+        }
+
         protected String Format(String format, params object[] args)
         {
             return String.Format(format, args);
         }
 
-        protected String Pair(String key, String value)
-        {
-            return Format("\"{0}\" : {1}", key, value);
-        }
-
         protected String Pair(String key, bool value)
         {
-            return Format("\"{0}\" : {1}", key, value.ToString().ToLower());
+            return Format("\"{0}\":{1}", key, value.ToString().ToLower());
+        }
+
+        protected String Pair(String key, Object value)
+        {
+            return Format("\"{0}\":{1}", key, value);
         }
 
         protected String Str(object str)
         {
-            return Format("\"{0}\"", str);
+            return Format("\"{0}\"", str.ToString().Replace("\\", "\\\\").Replace("\"", "\\\""));
         }
 
         protected BodyDelegate Object
         {
             get {
-                ++_indentDepth;
                 return (body) => {
-                    var bodyJoined = String.Join("," + Environment.NewLine, body.Select(x =>
-                        String.Format("{0}{1}", Indent(_indentDepth), x))) + Environment.NewLine;
-                    --_indentDepth;
-                    return "{" + Environment.NewLine + bodyJoined + Indent(_indentDepth) + "}";
+                    return "{" + String.Join(",", body) + "}";
                 };
             }
         }
@@ -80,28 +79,23 @@ namespace WebServer
         {
             get
             {
-                ++_indentDepth;
                 return (body) => {
-                    var bodyJoined = String.Join("," + Environment.NewLine, body.Select(x =>
-                        String.Format("{0}{1}", Indent(_indentDepth), x))) + Environment.NewLine;
-                    --_indentDepth;
-                    return "[" + Environment.NewLine + bodyJoined + Indent(_indentDepth) + "]";
+                    return "[" + String.Join(",", body) + "]";
                 };
             }
         }
 
-        protected String Dynamic(Action body)
+        protected String Dyn(Action body)
         {
             var sb = new StringBuilder();
             var oldWrite = Write;
+            bool first = true;
             Write = x => {
-                bool first = true;
                 foreach (var str in x) {
                     if (first) {
                         first = false;
                     } else {
-                        sb.Append(Environment.NewLine);
-                        sb.Append(Indent(_indentDepth));
+                        sb.Append(",");
                     }
                     sb.Append(str.ToString());
                 }

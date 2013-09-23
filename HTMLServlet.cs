@@ -12,19 +12,12 @@ namespace WebServer
         public delegate String BodyDelegate(params Object[] body);
 
         private StreamWriter _streamWriter;
-        private int _indentDepth;
 
         protected WriteDelegate Write { get; private set; }
 
         protected String Ln
         {
             get { return EmptyTag("br"); }
-        }
-
-        protected String Indent(int depth)
-        {
-            var spaces = Enumerable.Range(0, _indentDepth * 2).Select(x => ' ');
-            return String.Join(String.Empty, spaces);
         }
 
         protected override bool OnPreService()
@@ -35,7 +28,7 @@ namespace WebServer
 
             Write = x => {
                 foreach (var str in x) {
-                    _streamWriter.WriteLine("{0}{1}", Indent(_indentDepth), str);
+                    _streamWriter.WriteLine(str);
                 }
             };
 
@@ -72,20 +65,16 @@ namespace WebServer
         protected BodyDelegate Tag(String name, params Expression<Func<String, Object>>[] attributes)
         {
             var attribsJoined = JoinAttributes(attributes);
-            ++_indentDepth;
             return (body) => {
                 var bodyJoined = String.Join(String.Empty, body.Select(x =>
-                    String.Format("{0}{1}{2}", Indent(_indentDepth),
-                    x is BodyDelegate ? ((BodyDelegate) x)() : x, Environment.NewLine)));
-                --_indentDepth;
-                return String.Format("<{0}{1}>{3}{2}{4}</{0}>", name, attribsJoined, bodyJoined,
-                    Environment.NewLine, Indent(_indentDepth));
+                    x is BodyDelegate ? ((BodyDelegate) x)() : x));
+                return String.Format("<{0}{1}>{2}</{0}>", name, attribsJoined, bodyJoined);
             };
         }
 
         protected String DocType(params String[] args)
         {
-            return Format("<!DOCTYPE {0}>", String.Join(" ", args));
+            return Format("<!DOCTYPE {0}>{1}", String.Join(" ", args), Environment.NewLine);
         }
 
         protected String Dyn(Action body)
@@ -93,14 +82,7 @@ namespace WebServer
             var sb = new StringBuilder();
             var oldWrite = Write;
             Write = x => {
-                bool first = true;
                 foreach (var str in x) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        sb.Append(Environment.NewLine);
-                        sb.Append(Indent(_indentDepth));
-                    }
                     sb.Append(str is BodyDelegate ? ((BodyDelegate) str)() : str.ToString());
                 }
             };

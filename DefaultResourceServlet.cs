@@ -19,17 +19,15 @@ namespace WebServer
             { ".ico", "image/x-icon" }
         };
 
-        private static readonly String _sETag;
-        private static readonly DateTime _sModifyDate;
+        public static DateTime VersionDate { get; private set; }
+        public static String VersionNonce { get; private set; }
 
         static DefaultResourceServlet()
         {
-            _sModifyDate = DateTime.Now;
-            var nonce = _sModifyDate.ToString() + Assembly.GetExecutingAssembly().GetName().Version;
-            var hashAlg = SHA256.Create();
-            var hash = hashAlg.ComputeHash(Encoding.UTF8.GetBytes(nonce));
+            VersionDate = DateTime.Now;
 
-            _sETag = String.Join(String.Empty, hash.Select(x => x.ToString("x2")));
+            var nonce = BitConverter.GetBytes(VersionDate.Ticks);
+            VersionNonce = String.Join(String.Empty, nonce.Select(x => x.ToString("x2")));
         }
 
         public static String ResourceDirectory { get; set; }
@@ -40,13 +38,13 @@ namespace WebServer
             if (ResourceDirectory != null) {
                 if (EnableCaching) {
                     var etag = Request.Headers["If-None-Match"];
-                    if (etag != null && etag.Equals(_sETag)) {
+                    if (etag != null && etag.Equals(VersionNonce)) {
                         Response.StatusCode = 304;
                         return;
                     }
                 }
 
-                var url = Request.RawUrl;
+                var url = Request.Url.LocalPath;
                 if (url.StartsWith(Server.ResourceRootUrl)) {
                     url = URLRelativeTo(url, Server.ResourceRootUrl);
                 }
@@ -58,7 +56,7 @@ namespace WebServer
                     Response.ContentType = _sContentTypes[ext];
 
                     if (EnableCaching) {
-                        Response.AddHeader("ETag", _sETag);
+                        Response.AddHeader("ETag", VersionNonce);
                     }
 
                     using (var stream = File.OpenRead(path)) {

@@ -36,9 +36,9 @@ namespace WebServer
             _streamWriter.Flush();
         }
 
-        protected String Error(String message)
+        protected String Error(String message, bool shouldRetry = false)
         {
-            return Object(Pair("success", false), Pair("error", Str(message)));
+            return Object(Pair("success", false), Pair("error", Str(message)), Pair("retry", shouldRetry));
         }
 
         protected String Success(params Object[] body)

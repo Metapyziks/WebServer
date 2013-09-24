@@ -13,7 +13,6 @@ namespace WebServer
     {
         public static NameValueCollection GetParsedPost(this HttpListenerRequest request)
         {
-            // blah=something&other=kayegyjwqe&
             var body = new StreamReader(request.InputStream).ReadToEnd();
             var pairs = body.Split(new char[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
 

@@ -113,7 +113,9 @@ namespace WebServer
         public Servlet CreateNotFoundServlet()
         {
             var ctor = _notFoundServlet.GetConstructor(new Type[0]);
-            return (Servlet) ctor.Invoke(new Object[0]);
+            var servlet = (Servlet) ctor.Invoke(new Object[0]);
+            servlet.Server = this;
+            return servlet;
         }
 
         public Servlet CreateServlet(String url)

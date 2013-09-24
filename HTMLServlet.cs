@@ -45,6 +45,7 @@ namespace WebServer
             var attribStrings = attributes.Select(attrib => {
                 var key = attrib.Parameters.First().Name;
                 var value = attrib.Compile()(String.Empty);
+                if (value == null) return String.Empty;
                 if (value is bool) value = value.ToString().ToLower();
                 return String.Format(" {0}=\"{1}\"", key, value);
             });

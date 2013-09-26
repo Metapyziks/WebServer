@@ -51,14 +51,9 @@ namespace WebServer
             return String.Format(format, args);
         }
 
-        protected String Pair(String key, bool value)
-        {
-            return Format("\"{0}\":{1}", key, value.ToString().ToLower());
-        }
-
         protected String Pair(String key, Object value)
         {
-            return Format("\"{0}\":{1}", key, value ?? "null");
+            return Format("\"{0}\":{1}", key, value is bool ? value.ToString().ToLower() : (value ?? "null"));
         }
 
         protected String Str(object str)

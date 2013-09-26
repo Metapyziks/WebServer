@@ -58,7 +58,7 @@ namespace WebServer
 
         protected String Pair(String key, Object value)
         {
-            return Format("\"{0}\":{1}", key, value);
+            return Format("\"{0}\":{1}", key, value ?? "null");
         }
 
         protected String Str(object str)

@@ -83,8 +83,10 @@ namespace WebServer
 
         internal void Cancel()
         {
-            _canceled = true;
+            if (_canceled) return;
 
+            _canceled = true;
+            
             NextTime = DateTime.MaxValue;
             Timer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
             Timer.Dispose();

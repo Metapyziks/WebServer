@@ -159,7 +159,7 @@ namespace WebServer
                 url = url.Substring(0, queryStart);
             }
 
-            Type type = _notFoundServlet;
+            Type type = ResourceRootUrl == "/" ? _resourceServlet : _notFoundServlet;
             do {
                 if (_boundServlets.ContainsKey(url)) {
                     type = _boundServlets[url];

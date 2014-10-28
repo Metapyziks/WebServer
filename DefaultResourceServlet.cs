@@ -13,6 +13,7 @@ namespace WebServer
         private static readonly Dictionary<String, String> _sContentTypes = new Dictionary<string,string>() {
             { ".css", "text/css" },
             { ".js", "application/javascript" },
+            { ".xml", "application/xml" },
             { ".png", "image/png" },
             { ".jpg", "image/jpeg" },
             { ".ttf", "font/ttf" },

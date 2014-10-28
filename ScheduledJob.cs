@@ -5,7 +5,7 @@ namespace WebServer
 {
     internal class ScheduledJob
     {
-        private Action<Server> _job;
+        private readonly Action<Server> _job;
         private bool _canceled;
 
         internal String Identifier { get; private set; }

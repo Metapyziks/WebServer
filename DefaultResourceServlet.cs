@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Security.Cryptography;
 using System.IO;
-using System.Text;
 
 namespace WebServer
 {

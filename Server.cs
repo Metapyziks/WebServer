@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -7,6 +8,20 @@ using System.Threading;
 
 namespace WebServer
 {
+    public class LoggedMessageEventArgs : EventArgs
+    {
+        public EventLogEntryType Type { get; private set; }
+        public String Message { get; private set; }
+
+        public LoggedMessageEventArgs(EventLogEntryType type, String message)
+        {
+            Type = type;
+            Message = message;
+        }
+    }
+
+    public delegate void LoggedMessageHandler(Server server, LoggedMessageEventArgs e);
+
     public class Server
     {
         private readonly Dictionary<String, Type> _boundServlets;
@@ -20,6 +35,8 @@ namespace WebServer
         private Type _resourceServlet;
         
         public String ResourceRootUrl { get; set; }
+
+        public event LoggedMessageHandler LoggedMessage;
         
         public bool IsListening
         {
@@ -44,6 +61,23 @@ namespace WebServer
             BindServletToURL<DefaultResourceServlet>("/favicon.ico");
         }
 
+        public void Log(EventLogEntryType type, String format, params object[] args)
+        {
+            if (LoggedMessage != null) {
+                LoggedMessage(this, new LoggedMessageEventArgs(type, String.Format(format, args)));
+            }
+        }
+
+        public virtual void Log(Exception e)
+        {
+            Log(EventLogEntryType.Error, "{0}: {1}", e.Message, e.StackTrace);
+        }
+
+        public virtual void Log(String format, params Object[] args)
+        {
+            Log(EventLogEntryType.Information, format, args);
+        }
+
         public void Stop()
         {
             _stopped = true;
@@ -62,7 +96,7 @@ namespace WebServer
         {
             var types = assembly.GetTypes()
                 .Where(x => typeof(Servlet).IsAssignableFrom(x))
-                .Where(x => x.GetCustomAttributes<ServletURLAttribute>().Count() > 0);
+                .Where(x => x.GetCustomAttributes<ServletURLAttribute>().Any());
 
             foreach (var type in types) {
                 BindServletToURL(type);
@@ -79,7 +113,7 @@ namespace WebServer
         {
             var attribs = t.GetCustomAttributes<ServletURLAttribute>();
 
-            if (attribs.Count() == 0) {
+            if (!attribs.Any()) {
                 throw new InvalidOperationException("Servlet class must have a ServletURLAttribute");
             }
 
@@ -188,17 +222,6 @@ namespace WebServer
 
             _listener.Close();
             Log("Stopped Listening");
-        }
-
-        public virtual void Log(Exception e)
-        {
-            Console.WriteLine("[{0}] {1}", DateTime.Now, e);
-            Console.WriteLine(e.StackTrace);
-        }
-
-        public virtual void Log(String format, params Object[] args)
-        {
-            Console.WriteLine("[{0}] {1}", DateTime.Now, String.Format(format, args));
         }
     }
 }

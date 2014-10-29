@@ -8,18 +8,28 @@ using System.Threading;
 
 namespace WebServer
 {
-    public class LoggedMessageEventArgs : EventArgs
+    public class BroadcastedMessageEventArgs : EventArgs
     {
-        public EventLogEntryType Type { get; private set; }
         public String Message { get; private set; }
 
-        public LoggedMessageEventArgs(EventLogEntryType type, String message)
+        public BroadcastedMessageEventArgs(String message)
         {
-            Type = type;
             Message = message;
         }
     }
 
+    public class LoggedMessageEventArgs : BroadcastedMessageEventArgs
+    {
+        public EventLogEntryType Type { get; private set; }
+
+        public LoggedMessageEventArgs(EventLogEntryType type, String message)
+            : base(message)
+        {
+            Type = type;
+        }
+    }
+
+    public delegate void BroadcastedMessageHandler(Server server, BroadcastedMessageEventArgs e);
     public delegate void LoggedMessageHandler(Server server, LoggedMessageEventArgs e);
 
     public class Server
@@ -36,6 +46,7 @@ namespace WebServer
         
         public String ResourceRootUrl { get; set; }
 
+        public event BroadcastedMessageHandler BroadcastedMessage;
         public event LoggedMessageHandler LoggedMessage;
         
         public bool IsListening
@@ -59,6 +70,13 @@ namespace WebServer
             _resourceServlet = typeof(DefaultResourceServlet);
 
             BindServletToURL<DefaultResourceServlet>("/favicon.ico");
+        }
+
+        public void Broadcast(String format, params object[] args)
+        {
+            if (BroadcastedMessage != null) {
+                BroadcastedMessage(this, new BroadcastedMessageEventArgs(String.Format(format, args)));
+            }
         }
 
         public void Log(EventLogEntryType type, String format, params object[] args)

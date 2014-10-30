@@ -60,9 +60,16 @@ namespace WebServer
                         Response.AddHeader("ETag", VersionNonce);
                     }
 
-                    using (var stream = File.OpenRead(path)) {
-                        stream.CopyTo(Response.OutputStream);
-                        stream.Flush();
+                    if (Request.HttpMethod != "HEAD") {
+                        using (var stream = File.OpenRead(path)) {
+                            Response.ContentLength64 = stream.Length;
+
+                            stream.CopyTo(Response.OutputStream);
+                            stream.Flush();
+                        }
+                    } else {
+                        var info = new FileInfo(path);
+                        Response.ContentLength64 = info.Length;
                     }
                     return;
                 }

@@ -15,7 +15,9 @@ namespace WebServer
             { ".jpg", "image/jpeg" },
             { ".ttf", "font/ttf" },
             { ".ico", "image/x-icon" },
-            { ".unity3d", "application/vnd.unity" }
+            { ".unity3d", "application/vnd.unity" },
+            { ".log", "text/plain" },
+            { ".zip", "application/zip" }
         };
 
         public static DateTime VersionDate { get; private set; }

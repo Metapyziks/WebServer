@@ -74,15 +74,19 @@ namespace WebServer
 
         public void Broadcast(String format, params object[] args)
         {
+            var message = args.Length == 0 ? format : String.Format(format, args);
+
             if (BroadcastedMessage != null) {
-                BroadcastedMessage(this, new BroadcastedMessageEventArgs(String.Format(format, args)));
+                BroadcastedMessage(this, new BroadcastedMessageEventArgs(message));
             }
         }
 
         public void Log(EventLogEntryType type, String format, params object[] args)
         {
+            var message = args.Length == 0 ? format : String.Format(format, args);
+
             if (LoggedMessage != null) {
-                LoggedMessage(this, new LoggedMessageEventArgs(type, String.Format(format, args)));
+                LoggedMessage(this, new LoggedMessageEventArgs(type, message));
             }
         }
 

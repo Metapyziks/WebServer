@@ -202,7 +202,12 @@ namespace WebServer
         public void AddScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action<Server> job)
         {
             var scheduledJob = new ScheduledJob(this, ident, nextTime, interval, job);
-            _scheduledJobs.Add(ident, scheduledJob);
+
+            if (_scheduledJobs.ContainsKey(ident)) {
+                _scheduledJobs[ident] = scheduledJob;
+            } else {
+                _scheduledJobs.Add(ident, scheduledJob);
+            }
         }
 
         private void WorkerTask(Object state)

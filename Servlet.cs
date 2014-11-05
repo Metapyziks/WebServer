@@ -52,6 +52,8 @@ namespace WebServer
                 if (OnPreService()) {
                     OnService();
                     OnPostService();
+                } else {
+                    Server.CreateNotFoundServlet().Service(request, response);
                 }
             } catch (Exception e) {
                 Server.Log(e);
@@ -64,7 +66,7 @@ namespace WebServer
 
         protected virtual bool OnPreService() { return true; }
 
-        protected abstract void OnService();
+        protected virtual void OnService() { }
 
         protected virtual void OnPostService() { }
     }

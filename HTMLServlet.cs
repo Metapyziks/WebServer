@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Web;
 
 namespace WebServer
 {
@@ -50,6 +51,11 @@ namespace WebServer
                 return String.Format(" {0}=\"{1}\"", key, value);
             });
             return String.Join(String.Empty, attribStrings);
+        }
+
+        protected String Escape(String str)
+        {
+            return HttpUtility.HtmlEncode(str);
         }
 
         protected String Format(String format, params object[] args)

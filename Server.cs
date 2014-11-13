@@ -20,7 +20,7 @@ namespace WebServer
         }
     }
 
-    public delegate void LoggedMessageHandler(Server server, LoggedMessageEventArgs e);
+    public delegate void LoggedMessageHandler(LoggedMessageEventArgs e);
 
     public class Server
     {
@@ -66,7 +66,7 @@ namespace WebServer
             var message = args.Length == 0 ? format : String.Format(format, args);
 
             if (LoggedMessage != null) {
-                LoggedMessage(this, new LoggedMessageEventArgs(type, message));
+                LoggedMessage(new LoggedMessageEventArgs(type, message));
             }
         }
 

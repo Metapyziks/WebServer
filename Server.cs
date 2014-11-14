@@ -26,6 +26,7 @@ namespace WebServer
     {
         private readonly Dictionary<String, Type> _boundServlets;
         private readonly HashSet<ScheduledJob> _scheduledJobs;
+        private readonly List<ScheduledJob> _jobsToRemove; 
 
         private readonly HttpListener _listener;
         private readonly ManualResetEvent _stop;
@@ -47,6 +48,7 @@ namespace WebServer
         {
             _boundServlets = new Dictionary<String, Type>();
             _scheduledJobs = new HashSet<ScheduledJob>();
+            _jobsToRemove = new List<ScheduledJob>();
 
             _listener = new HttpListener();
 
@@ -85,7 +87,7 @@ namespace WebServer
             _stopped = true;
             _stop.Set();
 
-            foreach (var job in _scheduledJobs.ToArray()) {
+            foreach (var job in _scheduledJobs) {
                 job.Cancel();
             }
         }
@@ -189,12 +191,7 @@ namespace WebServer
         {
             _scheduledJobs.Add(new ScheduledJob(this, ident, nextTime, interval, job));
         }
-
-        internal void RemoveJob(ScheduledJob job)
-        {
-            _scheduledJobs.Remove(job);
-        }
-
+        
         private void WorkerTask(Object state)
         {
             if (_stopped) return;

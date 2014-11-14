@@ -5,6 +5,8 @@ namespace WebServer
 {
     internal class ScheduledJob
     {
+        private Server _server;
+
         private readonly Action<Server> _job;
         private bool _canceled;
 
@@ -90,6 +92,8 @@ namespace WebServer
             NextTime = DateTime.MaxValue;
             Timer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
             Timer.Dispose();
+
+            _server.RemoveJob(this);
         }
     }
 }

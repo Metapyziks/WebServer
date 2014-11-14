@@ -25,7 +25,7 @@ namespace WebServer
     public class Server
     {
         private readonly Dictionary<String, Type> _boundServlets;
-        private readonly Dictionary<String, ScheduledJob> _scheduledJobs;
+        private readonly HashSet<ScheduledJob> _scheduledJobs;
 
         private readonly HttpListener _listener;
         private readonly ManualResetEvent _stop;
@@ -46,7 +46,7 @@ namespace WebServer
         public Server()
         {
             _boundServlets = new Dictionary<String, Type>();
-            _scheduledJobs = new Dictionary<String, ScheduledJob>();
+            _scheduledJobs = new HashSet<ScheduledJob>();
 
             _listener = new HttpListener();
 
@@ -84,8 +84,9 @@ namespace WebServer
         {
             _stopped = true;
             _stop.Set();
-            foreach (var job in _scheduledJobs) {
-                job.Value.Cancel();
+
+            foreach (var job in _scheduledJobs.ToArray()) {
+                job.Cancel();
             }
         }
 
@@ -179,15 +180,19 @@ namespace WebServer
             return (Servlet) ctor.Invoke(new Object[0]);
         }
 
-        public void AddScheduledJob(String ident, DateTime nextTime, TimeSpan interval, Action<Server> job)
+        public void ScheduleJob(String ident, TimeSpan after, Action<Server> job)
         {
-            var scheduledJob = new ScheduledJob(this, ident, nextTime, interval, job);
+            ScheduleJob(ident, DateTime.Now.Add(after), TimeSpan.Zero, job);
+        }
 
-            if (_scheduledJobs.ContainsKey(ident)) {
-                _scheduledJobs[ident] = scheduledJob;
-            } else {
-                _scheduledJobs.Add(ident, scheduledJob);
-            }
+        public void ScheduleJob(String ident, DateTime nextTime, TimeSpan interval, Action<Server> job)
+        {
+            _scheduledJobs.Add(new ScheduledJob(this, ident, nextTime, interval, job));
+        }
+
+        internal void RemoveJob(ScheduledJob job)
+        {
+            _scheduledJobs.Remove(job);
         }
 
         private void WorkerTask(Object state)

@@ -25,8 +25,9 @@ namespace WebServer
     public class Server
     {
         private readonly Dictionary<String, Type> _boundServlets;
-        private readonly HashSet<ScheduledJob> _scheduledJobs;
-        private readonly List<ScheduledJob> _jobsToRemove; 
+        private readonly LinkedList<ScheduledJob> _scheduledJobs;
+
+        private readonly AutoResetEvent _scheduledJobHandle;
 
         private readonly HttpListener _listener;
         private readonly ManualResetEvent _stop;
@@ -47,8 +48,9 @@ namespace WebServer
         public Server()
         {
             _boundServlets = new Dictionary<String, Type>();
-            _scheduledJobs = new HashSet<ScheduledJob>();
-            _jobsToRemove = new List<ScheduledJob>();
+            _scheduledJobs = new LinkedList<ScheduledJob>();
+
+            _scheduledJobHandle = new AutoResetEvent(false);
 
             _listener = new HttpListener();
 
@@ -184,15 +186,63 @@ namespace WebServer
 
         public void ScheduleJob(String ident, TimeSpan after, Action<Server> job)
         {
-            ScheduleJob(ident, DateTime.Now.Add(after), TimeSpan.Zero, job);
+            ScheduleJob(new ScheduledJob(ident, DateTime.Now.Add(after), TimeSpan.Zero, job));
         }
 
         public void ScheduleJob(String ident, DateTime nextTime, TimeSpan interval, Action<Server> job)
         {
-            _scheduledJobs.Add(new ScheduledJob(this, ident, nextTime, interval, job));
+            ScheduleJob(new ScheduledJob(ident, nextTime, interval, job));
+        }
+
+        private void ScheduleJob(ScheduledJob job)
+        {
+            lock (_scheduledJobs) {
+                var nextJob = _scheduledJobs.First;
+                var first = true;
+
+                while (nextJob != null) {
+                    if (nextJob.Value.NextTime <= job.NextTime) {
+                        nextJob = nextJob.Next;
+                        first = false;
+                        continue;
+                    }
+
+                    _scheduledJobs.AddBefore(nextJob, job);
+
+                    if (first) _scheduledJobHandle.Set();
+                    return;
+                }
+
+                _scheduledJobs.AddFirst(job);
+                if (first) _scheduledJobHandle.Set();
+            }
+        }
+
+        private void ScheduledJobTask()
+        {
+            while (!_stopped) {
+                var timeout = 1000;
+                var first = _scheduledJobs.FirstOrDefault();
+
+                if (first != null) {
+                    timeout = Math.Min(timeout, (int) Math.Ceiling((first.NextTime - DateTime.Now).TotalMilliseconds));
+                }
+
+                _scheduledJobHandle.WaitOne(timeout);
+
+                lock (_scheduledJobs) {
+                    first = _scheduledJobs.FirstOrDefault();
+                    if (first == null || !first.ShouldPerform) continue;
+                    _scheduledJobs.RemoveFirst();
+                }
+
+                first.Perform(this);
+
+                if (!first.Cancelled) ScheduleJob(first);
+            }
         }
         
-        private void WorkerTask(Object state)
+        private void HttpRequestTask(Object state)
         {
             if (_stopped) return;
             
@@ -214,11 +264,13 @@ namespace WebServer
             _listener.Start();
             Log("Started Listening");
 
+            new Thread(ScheduledJobTask).Start();
+
             while (_listener.IsListening && !_stopped) {
                 var ctx = _listener.BeginGetContext(res => {
                     try {
                         var context = _listener.EndGetContext(res);
-                        ThreadPool.QueueUserWorkItem(WorkerTask, context);
+                        ThreadPool.QueueUserWorkItem(HttpRequestTask, context);
                     } catch {
                         return;
                     }

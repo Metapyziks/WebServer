@@ -228,7 +228,9 @@ namespace WebServer
                     timeout = Math.Min(timeout, (int) Math.Ceiling((first.NextTime - DateTime.Now).TotalMilliseconds));
                 }
 
-                _scheduledJobHandle.WaitOne(timeout);
+                if (timeout > 0) {
+                    _scheduledJobHandle.WaitOne(timeout);
+                }
 
                 lock (_scheduledJobs) {
                     first = _scheduledJobs.FirstOrDefault();

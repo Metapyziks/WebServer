@@ -39,6 +39,8 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.SqlServerCe" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Default404Servlet.cs" />

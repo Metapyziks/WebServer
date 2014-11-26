@@ -44,7 +44,7 @@ namespace WebServer
         private String JoinAttributes(Expression<Func<String, Object>>[] attributes)
         {
             var attribStrings = attributes.Select(attrib => {
-                var key = attrib.Parameters.First().Name;
+                var key = attrib.Parameters.First().Name.Replace('_', '-');
                 var value = attrib.Compile()(String.Empty);
                 if (value == null) return String.Empty;
                 if (value is bool) value = value.ToString().ToLower();

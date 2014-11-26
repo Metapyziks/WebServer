@@ -59,7 +59,7 @@ namespace WebServer
 
             ResourceRootUrl = "/res";
 
-            _notFoundServlet = typeof(Default404Servlet);
+            _notFoundServlet = typeof(DefaultErrorServlet);
             _resourceServlet = typeof(DefaultResourceServlet);
 
             BindServletToURL<DefaultResourceServlet>("/favicon.ico");
@@ -140,7 +140,7 @@ namespace WebServer
             _boundServlets.Add(url, t);
         }
 
-        public void SetNotFoundServlet<T>()
+        public void SetErrorServlet<T>()
             where T : Servlet
         {
             _notFoundServlet = typeof(T);
@@ -151,7 +151,7 @@ namespace WebServer
             _resourceServlet = typeof(T);
         }
 
-        public Servlet CreateNotFoundServlet()
+        public Servlet CreateErrorServlet()
         {
             var ctor = _notFoundServlet.GetConstructor(new Type[0]);
             var servlet = (Servlet) ctor.Invoke(new Object[0]);

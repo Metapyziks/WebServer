@@ -16,6 +16,7 @@ namespace WebServer
             { ".ttf", "font/ttf" },
             { ".ico", "image/x-icon" },
             { ".unity3d", "application/vnd.unity" },
+            { ".txt", "text/plain" },
             { ".log", "text/plain" },
             { ".zip", "application/zip" },
             { ".gz", "application/x-gzip" }
@@ -76,7 +77,7 @@ namespace WebServer
                 }
             }
 
-            Server.CreateNotFoundServlet().Service(Request, Response);
+            Server.CreateErrorServlet().Service(Request, Response);
         }
     }
 }

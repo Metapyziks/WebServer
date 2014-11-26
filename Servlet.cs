@@ -53,7 +53,7 @@ namespace WebServer
                     OnService();
                     OnPostService();
                 } else {
-                    Server.CreateNotFoundServlet().Service(request, response);
+                    Server.CreateErrorServlet().Service(request, response);
                 }
             } catch (Exception e) {
                 Server.Log(e);

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 using System.Threading;
@@ -24,7 +25,7 @@ namespace WebServer
 
     public class Server
     {
-        private readonly Dictionary<String, Type> _boundServlets;
+        private readonly Dictionary<String, Func<Servlet>> _boundServlets;
         private readonly LinkedList<ScheduledJob> _scheduledJobs;
 
         private readonly AutoResetEvent _scheduledJobHandle;
@@ -33,8 +34,8 @@ namespace WebServer
         private readonly ManualResetEvent _stop;
         private bool _stopped;
 
-        private Type _notFoundServlet;
-        private Type _resourceServlet;
+        private Func<Servlet> _notFoundServlet;
+        private Func<Servlet> _resourceServlet;
         
         public String ResourceRootUrl { get; set; }
 
@@ -47,7 +48,7 @@ namespace WebServer
 
         public Server()
         {
-            _boundServlets = new Dictionary<String, Type>();
+            _boundServlets = new Dictionary<String, Func<Servlet>>();
             _scheduledJobs = new LinkedList<ScheduledJob>();
 
             _scheduledJobHandle = new AutoResetEvent(false);
@@ -59,8 +60,8 @@ namespace WebServer
 
             ResourceRootUrl = "/res";
 
-            _notFoundServlet = typeof(DefaultErrorServlet);
-            _resourceServlet = typeof(DefaultResourceServlet);
+            _notFoundServlet = GetServletCtor(typeof(DefaultErrorServlet));
+            _resourceServlet = GetServletCtor(typeof(DefaultResourceServlet));
 
             BindServletToURL<DefaultResourceServlet>("/favicon.ico");
         }
@@ -84,14 +85,16 @@ namespace WebServer
             Log(EventLogEntryType.Information, format, args);
         }
 
-        public void Stop()
+        private Func<Servlet> GetServletCtor(Type type)
         {
-            _stopped = true;
-            _stop.Set();
-
-            foreach (var job in _scheduledJobs) {
-                job.Cancel();
+            var ctor = type.GetConstructor(new Type[0]);
+            if (ctor == null) {
+                throw new MissingMethodException(String.Format("Type {0} must have a parameterless " +
+                    "constructor to be used as a servlet.", type.FullName));
             }
+
+            var invc = Expression.New(ctor);
+            return Expression.Lambda<Func<Servlet>>(invc).Compile();
         }
 
         public void AddPrefix(String uriPrefix)
@@ -132,31 +135,28 @@ namespace WebServer
         public void BindServletToURL<T>(String url)
             where T : Servlet
         {
-            _boundServlets.Add(url, typeof(T));
+            _boundServlets.Add(url, GetServletCtor(typeof(T)));
         }
 
         public void BindServletToURL(Type t, String url)
         {
-            _boundServlets.Add(url, t);
+            _boundServlets.Add(url, GetServletCtor(t));
         }
 
         public void SetErrorServlet<T>()
             where T : Servlet
         {
-            _notFoundServlet = typeof(T);
+            _notFoundServlet = GetServletCtor(typeof(T));
         }
 
         public void SetResourceServlet<T>()
         {
-            _resourceServlet = typeof(T);
+            _resourceServlet = GetServletCtor(typeof(T));
         }
 
         public Servlet CreateErrorServlet()
         {
-            var ctor = _notFoundServlet.GetConstructor(new Type[0]);
-            var servlet = (Servlet) ctor.Invoke(new Object[0]);
-            servlet.Server = this;
-            return servlet;
+            return _notFoundServlet();
         }
 
         public Servlet CreateServlet(String url)
@@ -166,13 +166,13 @@ namespace WebServer
                 url = url.Substring(0, queryStart);
             }
 
-            Type type = ResourceRootUrl == "/" ? _resourceServlet : _notFoundServlet;
+            var ctor = ResourceRootUrl == "/" ? _resourceServlet : _notFoundServlet;
             do {
                 if (_boundServlets.ContainsKey(url)) {
-                    type = _boundServlets[url];
+                    ctor = _boundServlets[url];
                     break;
                 } else if (url == ResourceRootUrl) {
-                    type = _resourceServlet;
+                    ctor = _resourceServlet;
                     break;
                 }
 
@@ -180,8 +180,7 @@ namespace WebServer
                 url = url.Substring(0, divider == -1 ? 0 : divider);
             } while (url.Length > 0);
 
-            var ctor = type.GetConstructor(new Type[0]);
-            return (Servlet) ctor.Invoke(new Object[0]);
+            return ctor();
         }
 
         public void ScheduleJob(String ident, TimeSpan after, Action<Server> job)
@@ -285,6 +284,16 @@ namespace WebServer
 
             _listener.Close();
             Log("Stopped Listening");
+        }
+
+        public void Stop()
+        {
+            _stopped = true;
+            _stop.Set();
+
+            foreach (var job in _scheduledJobs) {
+                job.Cancel();
+            }
         }
     }
 }

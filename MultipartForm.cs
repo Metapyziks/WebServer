@@ -300,6 +300,8 @@ namespace WebServer
                 var field = Create(headerDict, new FrameStream(stream, start, end - start));
                 stream.Seek(end, SeekOrigin.Begin);
 
+                ReadLine(stream, readlineBuffer);
+
                 if (field.IsFile) {
                     log.AppendLine(Encoding.ASCII.GetString(((FileFormField) field).Data));
                 } else if (field.IsText) {

@@ -194,6 +194,9 @@ namespace WebServer
 
             var log = new StringBuilder();
 
+            log.AppendFormat("Begin 0x{0:x}", reader.BaseStream.Position);
+            log.AppendLine();
+
             var line = reader.ReadLine();
             while (true) {
                 if (line == null || !line.StartsWith(String.Format("--{0}", Boundary))) {

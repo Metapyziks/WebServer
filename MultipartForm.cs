@@ -238,13 +238,13 @@ namespace WebServer
 
             var line = ReadLine(stream, readlineBuffer);
             while (true) {
+                log.AppendLine(line);
+
                 if (line == null || !line.StartsWith(String.Format("--{0}", Boundary))) {
                     throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x{0:x} {1}", stream.Position, log));
                 }
 
                 if (line.EndsWith("--")) break;
-
-                log.AppendLine(line);
 
                 headerDict.Clear();
 

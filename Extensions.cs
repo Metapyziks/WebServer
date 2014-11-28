@@ -33,6 +33,7 @@ namespace WebServer
 
             using (var copy = new MemoryStream()) {
                 request.InputStream.CopyTo(copy);
+                copy.Seek(0, SeekOrigin.Begin);
                 return new MultipartFormField(headers, copy);
             }
         }

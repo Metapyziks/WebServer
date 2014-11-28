@@ -193,7 +193,7 @@ namespace WebServer
             var line = reader.ReadLine();
             while (true) {
                 if (line == null || !line.StartsWith(String.Format("--{0}", Boundary))) {
-                    throw new HttpException(400, GetFormatExceptionMessage(0x10));
+                    throw new HttpException(400, GetFormatExceptionMessage(0x10, line));
                 }
 
                 if (line.EndsWith("--")) break;
@@ -204,7 +204,7 @@ namespace WebServer
                 while (!String.IsNullOrWhiteSpace(headerLine = reader.ReadLine())) {
                     var keyVal = FormFieldHeader.ParseKeyValue(headerLine);
                     if (keyVal.Key == null || keyVal.Value == null) {
-                        throw new HttpException(400, GetFormatExceptionMessage(0x11));
+                        throw new HttpException(400, GetFormatExceptionMessage(0x11, line));
                     }
 
                     headerDict.Add(keyVal.Key, keyVal.Value);

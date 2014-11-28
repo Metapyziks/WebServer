@@ -271,7 +271,7 @@ namespace WebServer
                         break;
                     }
 
-                    end = stream.Position;
+                    end = stream.Position - 2;
                 }
 
                 stream.Seek(start, SeekOrigin.Begin);

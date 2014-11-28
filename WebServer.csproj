@@ -46,8 +46,10 @@
     <Compile Include="DefaultErrorServlet.cs" />
     <Compile Include="DefaultResourceServlet.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="FrameStream.cs" />
     <Compile Include="HTMLServlet.cs" />
     <Compile Include="JSONServlet.cs" />
+    <Compile Include="MultipartForm.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScheduledJob.cs" />
     <Compile Include="Server.cs" />

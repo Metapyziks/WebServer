@@ -199,23 +199,45 @@ namespace WebServer
                 format == null ? String.Empty : Environment.NewLine + (args.Length == 0 ? format : String.Format(format, args)));
         }
 
+        private static String ReadLine(Stream stream, byte[] buffer)
+        {
+            var line = String.Empty;
+
+            int read;
+            while ((read = stream.Read(buffer, 0, 128)) > 0) {
+                var part = Encoding.ASCII.GetString(buffer, 0, read);
+
+                if (part.Contains("\r\n") || line.Length > 0 && line[line.Length - 1] == '\r' && part[0] == '\n') {
+                    var index = part.IndexOf("\r\n");
+                    stream.Seek(stream.Position - read + index, SeekOrigin.Begin);
+
+                    return String.Concat(line, part).Substring(line.Length + index);
+                }
+
+                line = String.Concat(line, part);
+            }
+
+            return line;
+        }
+
         public MultipartFormField(HeaderCollection headers, Stream stream)
             : base(headers)
         {
-            var reader = new StreamReader(stream, Encoding.ASCII, false, 128, true);
             var headerDict = new Dictionary<String, FormFieldHeader>();
 
             var subFields = new List<FormField>();
 
             var log = new StringBuilder();
 
-            log.AppendFormat("Begin 0x{0:x}", reader.BaseStream.Position);
+            log.AppendFormat("Begin 0x{0:x}", stream.Position);
             log.AppendLine();
 
-            var line = reader.ReadLine();
+            var readlineBuffer = new byte[128];
+
+            var line = ReadLine(stream, readlineBuffer);
             while (true) {
                 if (line == null || !line.StartsWith(String.Format("--{0}", Boundary))) {
-                    throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x{0:x} {1}", reader.BaseStream.Position, log));
+                    throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x{0:x} {1}", stream.Position, log));
                 }
 
                 if (line.EndsWith("--")) break;
@@ -225,10 +247,10 @@ namespace WebServer
                 headerDict.Clear();
 
                 String headerLine;
-                while (!String.IsNullOrWhiteSpace(headerLine = reader.ReadLine())) {
+                while (!String.IsNullOrWhiteSpace(headerLine = ReadLine(stream, readlineBuffer))) {
                     var keyVal = FormFieldHeader.ParseKeyValue(headerLine);
                     if (keyVal.Key == null || keyVal.Value == null) {
-                        throw new HttpException(400, GetFormatExceptionMessage(0x11, "0x{0:x} {1}", reader.BaseStream.Position, log));
+                        throw new HttpException(400, GetFormatExceptionMessage(0x11, "0x{0:x} {1}", stream.Position, log));
                     }
 
                     headerDict.Add(keyVal.Key, keyVal.Value);
@@ -237,34 +259,34 @@ namespace WebServer
                     log.AppendLine();
                 }
 
-                var start = reader.BaseStream.Position;
-                var end = reader.BaseStream.Position;
+                var start = stream.Position;
+                var end = stream.Position;
 
                 log.AppendFormat("Start: {0}", start);
                 log.AppendLine();
 
-                while ((line = reader.ReadLine()) != null) {
-                    if (!line.StartsWith(String.Format("--{0}", Boundary))) {
-                        end = reader.BaseStream.Position;
-                        continue;
+                while ((line = ReadLine(stream, readlineBuffer)) != null) {
+                    if (line.StartsWith(String.Format("--{0}", Boundary))) {
+                        break;
                     }
 
-                    log.AppendFormat("End: {0}", end);
-                    log.AppendLine();
-
-                    reader.BaseStream.Position = start;
-                    var field = Create(headerDict, new FrameStream(reader.BaseStream, start, end - start));
-                    reader.BaseStream.Position = end;
-
-                    if (field.IsFile) {
-                        log.AppendLine(Encoding.ASCII.GetString(((FileFormField) field).Data));
-                    } else if (field.IsText) {
-                        log.AppendLine(((TextFormField) field).Value);
-                    }
-
-                    subFields.Add(field);
-                    break;
+                    end = stream.Position;
                 }
+
+                log.AppendFormat("End: {0}", end);
+                log.AppendLine();
+
+                stream.Position = start;
+                var field = Create(headerDict, new FrameStream(stream, start, end - start));
+                stream.Position = end;
+
+                if (field.IsFile) {
+                    log.AppendLine(Encoding.ASCII.GetString(((FileFormField) field).Data));
+                } else if (field.IsText) {
+                    log.AppendLine(((TextFormField) field).Value);
+                }
+
+                subFields.Add(field);
             }
 
             throw new Exception(log.ToString());

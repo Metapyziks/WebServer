@@ -5,6 +5,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
+using System.Runtime.Remoting.Messaging;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -108,11 +109,26 @@ namespace WebServer
 
         public bool IsBinary { get; private set; }
 
-        public IDictionary<String, FormFieldHeader> Headers { get { return _headers; } }
-        
-        protected FormField(IDictionary<String, FormFieldHeader> headers)
+        public class HeaderCollection
         {
-            _headers = new Dictionary<string, FormFieldHeader>(headers, StringComparer.InvariantCultureIgnoreCase);
+            private readonly IDictionary<String, FormFieldHeader> _headers;
+
+            public FormFieldHeader this[String key]
+            {
+                get { return _headers.ContainsKey(key) ? _headers[key] : null; }
+            }
+
+            internal HeaderCollection(IDictionary<String, FormFieldHeader> headers)
+            {
+                _headers = new Dictionary<string, FormFieldHeader>(headers, StringComparer.InvariantCultureIgnoreCase);
+            }
+        }
+
+        public HeaderCollection Headers { get; private set; }
+
+        public FormField(IDictionary<String, FormFieldHeader> headers)
+        {
+            Headers = new HeaderCollection(headers);
 
             var cdisp = Headers["Content-Disposition"];
             if (cdisp != null) Name = cdisp["name"];

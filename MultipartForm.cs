@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
@@ -123,7 +122,7 @@ namespace WebServer
 
             internal HeaderCollection(IDictionary<String, FormFieldHeader> headers)
             {
-                _headers = new Dictionary<string, FormFieldHeader>(headers, StringComparer.InvariantCultureIgnoreCase);
+                _headers = new Dictionary<String, FormFieldHeader>(headers, StringComparer.InvariantCultureIgnoreCase);
             }
         }
 

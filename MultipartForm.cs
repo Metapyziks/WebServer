@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
-using System.Net.Mime;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -203,7 +202,7 @@ namespace WebServer
         public MultipartFormField(HeaderCollection headers, Stream stream)
             : base(headers)
         {
-            var reader = new StreamReader(stream, System.Text.Encoding.ASCII, false, 128, true);
+            var reader = new StreamReader(stream, Encoding.ASCII, false, 128, true);
             var headerDict = new Dictionary<String, FormFieldHeader>();
 
             var subFields = new List<FormField>();
@@ -260,6 +259,8 @@ namespace WebServer
                     break;
                 }
             }
+
+            throw new Exception(log.ToString());
 
             _subFields = subFields.ToArray();
         }

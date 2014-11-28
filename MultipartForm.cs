@@ -60,6 +60,11 @@ namespace WebServer
             Value = value;
             Options = options;
         }
+
+        public override string ToString()
+        {
+            return Value + Options.AllKeys.Select(x => String.Format("; {0}=\"{1}\"", x, Options[x]));
+        }
     }
 
     public abstract class FormField
@@ -174,6 +179,18 @@ namespace WebServer
 
         private readonly FormField[] _subFields;
 
+        public IEnumerable<String> FieldNames
+        {
+            get
+            {
+                return _subFields
+                    .Select(x => x.Headers["Content-Disposition"])
+                    .Where(x => x != null)
+                    .Select(x => x.Options["name"])
+                    .Where(x => !String.IsNullOrWhiteSpace(x));
+            }
+        }
+
         public FormField this[String headerKey]
         {
             get { return _subFields.FirstOrDefault(x => x.Name == headerKey); }
@@ -219,7 +236,7 @@ namespace WebServer
 
                     headerDict.Add(keyVal.Key, keyVal.Value);
 
-                    log.AppendFormat("{0}: {1}", keyVal.Key, keyVal.Value.Value);
+                    log.AppendFormat("{0}: {1}", keyVal.Key, keyVal.Value);
                     log.AppendLine();
                 }
 

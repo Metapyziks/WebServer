@@ -5,7 +5,6 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
-using System.Runtime.Remoting.Messaging;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -177,9 +176,10 @@ namespace WebServer
             get { return _subFields.FirstOrDefault(x => x.Name == headerKey); }
         }
 
-        private static String GetFormatExceptionMessage(int code)
+        private static String GetFormatExceptionMessage(int code, String data = null)
         {
-            return String.Format("Badly formatted 'multipart/form-data' (0x{0:x2}).", code);
+            return String.Format("Badly formatted 'multipart/form-data' (0x{0:x2}).{1}", code,
+                data == null ? String.Empty : Environment.NewLine + data);
         }
 
         public MultipartFormField(IDictionary<String, FormFieldHeader> headers, Stream stream)

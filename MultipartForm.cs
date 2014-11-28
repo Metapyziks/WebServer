@@ -88,6 +88,10 @@ namespace WebServer
                 throw new HttpException(400, GetFormatExceptionMessage(0x00));
             }
 
+            if (cdisp["filename"] != null) {
+                return new FileFormField(headers, stream);
+            }
+
             switch (cdisp.Value.ToLower()) {
                 case "file":
                     return new FileFormField(headers, stream);
@@ -111,8 +115,6 @@ namespace WebServer
         public abstract bool IsFile { get; }
 
         public abstract bool IsText { get; }
-
-        public TransferEncoding Encoding { get; private set; }
 
         public bool IsBinary { get; private set; }
 
@@ -138,33 +140,29 @@ namespace WebServer
             Headers = headers;
 
             var cdisp = Headers["Content-Disposition"];
-            if (cdisp != null) Name = cdisp["name"];
+            if (cdisp != null) { Name = cdisp["name"]; }
 
             var ctype = Headers["Content-Type"];
             if (ctype != null) {
                 ContentType = ctype.Value;
                 Boundary = ctype["boundary"];
+
+                if (ContentType == "application/octet-stream") {
+                    IsBinary = true;
+                }
             }
 
             var tenc = Headers["Content-Transfer-Encoding"];
             if (tenc != null) {
                 switch (tenc.Value.ToLower()) {
                     case "base64":
-                        Encoding = TransferEncoding.Base64;
-                        break;
                     case "8bit":
-                        Encoding = TransferEncoding.EightBit;
-                        break;
                     case "7bit":
-                        Encoding = TransferEncoding.SevenBit;
                         break;
                     default:
-                        Encoding = TransferEncoding.Unknown;
                         IsBinary = true;
                         break;
                 }
-            } else {
-                Encoding = TransferEncoding.SevenBit;
             }
         }
     }
@@ -262,8 +260,6 @@ namespace WebServer
                     break;
                 }
             }
-
-            throw new Exception(log.ToString());
 
             _subFields = subFields.ToArray();
         }

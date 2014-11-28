@@ -271,11 +271,11 @@ namespace WebServer
                         break;
                     }
 
-                    end = stream.Position - 2;
+                    end = stream.Position;
                 }
 
                 stream.Seek(start, SeekOrigin.Begin);
-                var field = Create(headerDict, new FrameStream(stream, start, end - start));
+                var field = Create(headerDict, new FrameStream(stream, start, end - start - 2));
                 stream.Seek(end, SeekOrigin.Begin);
 
                 ReadLine(stream, readlineBuffer);

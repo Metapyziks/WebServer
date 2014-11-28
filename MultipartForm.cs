@@ -201,23 +201,26 @@ namespace WebServer
 
         private static String ReadLine(Stream stream, byte[] buffer)
         {
-            String line = null;
+            var line = String.Empty;
+
+            var start = stream.Position;
 
             int read;
             while ((read = stream.Read(buffer, 0, 128)) > 0) {
                 var part = Encoding.ASCII.GetString(buffer, 0, read);
 
-                line = line ?? String.Empty;
-
                 if (part.Contains("\r\n") || line.Length > 0 && line[line.Length - 1] == '\r' && part[0] == '\n') {
                     var index = part.IndexOf("\r\n");
-                    stream.Seek(stream.Position - read + index + 2, SeekOrigin.Begin);
-
-                    return String.Concat(line, part).Substring(0, line.Length + index);
+                    line = String.Concat(line, part).Substring(0, line.Length + index);
+                    break;
                 }
 
                 line = String.Concat(line, part);
             }
+
+            if (stream.Position == start) return null;
+
+            stream.Seek(Math.Min(stream.Length, start + line.Length + 2), SeekOrigin.Begin);
 
             return line;
         }
@@ -278,9 +281,9 @@ namespace WebServer
                 log.AppendFormat("End: {0}", end);
                 log.AppendLine();
 
-                stream.Position = start;
+                stream.Seek(start, SeekOrigin.Begin);
                 var field = Create(headerDict, new FrameStream(stream, start, end - start));
-                stream.Position = end;
+                stream.Seek(end, SeekOrigin.Begin);
 
                 if (field.IsFile) {
                     log.AppendLine(Encoding.ASCII.GetString(((FileFormField) field).Data));

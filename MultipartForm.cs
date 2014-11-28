@@ -197,7 +197,7 @@ namespace WebServer
             var line = reader.ReadLine();
             while (true) {
                 if (line == null || !line.StartsWith(String.Format("--{0}", Boundary))) {
-                    throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x{0:x} 0x{1:x}", reader.BaseStream.Position, log.ToString()));
+                    throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x{0:x} {1}", reader.BaseStream.Position, log));
                 }
 
                 if (line.EndsWith("--")) break;
@@ -210,7 +210,7 @@ namespace WebServer
                 while (!String.IsNullOrWhiteSpace(headerLine = reader.ReadLine())) {
                     var keyVal = FormFieldHeader.ParseKeyValue(headerLine);
                     if (keyVal.Key == null || keyVal.Value == null) {
-                        throw new HttpException(400, GetFormatExceptionMessage(0x11, "0x{0:x} 0x{1:x}", reader.BaseStream.Position, log.ToString()));
+                        throw new HttpException(400, GetFormatExceptionMessage(0x11, "0x{0:x} {1}", reader.BaseStream.Position, log));
                     }
 
                     headerDict.Add(keyVal.Key, keyVal.Value);

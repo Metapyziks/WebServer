@@ -253,7 +253,7 @@ namespace WebServer
 
             var line = ReadLine(stream, readlineBuffer);
             while (true) {
-                log.AppendLine(line);
+                log.AppendLine("B: " + line);
 
                 if (line == null || !line.StartsWith(String.Format("--{0}", Boundary))) {
                     throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x{0:x} {1}", stream.Position, log));
@@ -265,6 +265,8 @@ namespace WebServer
 
                 String headerLine;
                 while (!String.IsNullOrWhiteSpace(headerLine = ReadLine(stream, readlineBuffer))) {
+                    log.AppendLine("H: " + headerLine);
+
                     var keyVal = FormFieldHeader.ParseKeyValue(headerLine);
                     if (keyVal.Key == null || keyVal.Value == null) {
                         throw new HttpException(400, GetFormatExceptionMessage(0x11, "0x{0:x} {1}", stream.Position, log));

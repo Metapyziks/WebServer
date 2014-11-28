@@ -253,9 +253,16 @@ namespace WebServer
                     log.AppendLine();
 
                     reader.BaseStream.Position = start;
-                    subFields.Add(Create(headerDict, new FrameStream(stream, start, end - start)));
+                    var field = Create(headerDict, new FrameStream(reader.BaseStream, start, end - start));
                     reader.BaseStream.Position = end;
 
+                    if (field.IsFile) {
+                        log.AppendLine(Encoding.ASCII.GetString(((FileFormField) field).Data));
+                    } else if (field.IsText) {
+                        log.AppendLine(((TextFormField) field).Value);
+                    }
+
+                    subFields.Add(field);
                     break;
                 }
             }

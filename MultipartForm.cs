@@ -70,8 +70,10 @@ namespace WebServer
             return String.Format("Badly formatted form field (0x{0:x2}).", code);
         }
 
-        public static FormField Create(IDictionary<String, FormFieldHeader> headers, Stream stream)
+        public static FormField Create(IDictionary<String, FormFieldHeader> headerDict, Stream stream)
         {
+            var headers = new HeaderCollection(headerDict);
+
             var ctype = headers["Content-Type"];
             if (ctype != null && ctype.Value.StartsWith("multipart/", StringComparison.InvariantCultureIgnoreCase)) {
                 return new MultipartFormField(headers, stream);
@@ -127,9 +129,9 @@ namespace WebServer
 
         public HeaderCollection Headers { get; private set; }
 
-        public FormField(IDictionary<String, FormFieldHeader> headers)
+        public FormField(HeaderCollection headers)
         {
-            Headers = new HeaderCollection(headers);
+            Headers = headers;
 
             var cdisp = Headers["Content-Disposition"];
             if (cdisp != null) Name = cdisp["name"];
@@ -184,7 +186,7 @@ namespace WebServer
                 format == null ? String.Empty : Environment.NewLine + (args.Length == 0 ? format : String.Format(format, args)));
         }
 
-        public MultipartFormField(IDictionary<String, FormFieldHeader> headers, Stream stream)
+        public MultipartFormField(HeaderCollection headers, Stream stream)
             : base(headers)
         {
             var reader = new StreamReader(stream, System.Text.Encoding.ASCII, false, 128, true);
@@ -269,7 +271,7 @@ namespace WebServer
 
         public override bool IsText { get { return false; } }
 
-        public FileFormField(IDictionary<String, FormFieldHeader> headers, Stream stream)
+        public FileFormField(HeaderCollection headers, Stream stream)
             : base(headers)
         {
             Data = new byte[stream.Length];
@@ -287,7 +289,7 @@ namespace WebServer
 
         public override bool IsText { get { return true; } }
 
-        public TextFormField(IDictionary<String, FormFieldHeader> headers, Stream stream)
+        public TextFormField(HeaderCollection headers, Stream stream)
             : base(headers)
         {
             Value = new StreamReader(stream).ReadToEnd();

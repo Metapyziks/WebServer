@@ -240,6 +240,8 @@ namespace WebServer
                     reader.BaseStream.Position = start;
                     subFields.Add(Create(headerDict, new FrameStream(stream, start, end - start)));
                     reader.BaseStream.Position = end;
+
+                    break;
                 }
             }
 

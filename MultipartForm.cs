@@ -63,7 +63,7 @@ namespace WebServer
 
         public override string ToString()
         {
-            return Value + Options.AllKeys.Select(x => String.Format("; {0}=\"{1}\"", x, Options[x]));
+            return Value + String.Join(String.Empty, Options.AllKeys.Select(x => String.Format("; {0}=\"{1}\"", x, Options[x])));
         }
     }
 

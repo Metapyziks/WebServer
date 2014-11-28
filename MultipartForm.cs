@@ -209,7 +209,7 @@ namespace WebServer
 
                 if (part.Contains("\r\n") || line.Length > 0 && line[line.Length - 1] == '\r' && part[0] == '\n') {
                     var index = part.IndexOf("\r\n");
-                    stream.Seek(stream.Position - read + index, SeekOrigin.Begin);
+                    stream.Seek(stream.Position - read + index + 2, SeekOrigin.Begin);
 
                     return String.Concat(line, part).Substring(line.Length + index);
                 }

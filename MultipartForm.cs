@@ -176,10 +176,10 @@ namespace WebServer
             get { return _subFields.FirstOrDefault(x => x.Name == headerKey); }
         }
 
-        private static String GetFormatExceptionMessage(int code, String data = null)
+        private static String GetFormatExceptionMessage(int code, String format = null, params Object[] args)
         {
             return String.Format("Badly formatted 'multipart/form-data' (0x{0:x2}).{1}", code,
-                data == null ? String.Empty : Environment.NewLine + data);
+                format == null ? String.Empty : Environment.NewLine + (args.Length == 0 ? format : String.Format(format, args)));
         }
 
         public MultipartFormField(IDictionary<String, FormFieldHeader> headers, Stream stream)
@@ -193,7 +193,7 @@ namespace WebServer
             var line = reader.ReadLine();
             while (true) {
                 if (line == null || !line.StartsWith(String.Format("--{0}", Boundary))) {
-                    throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x" + reader.BaseStream.Position.ToString("x")));
+                    throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x{0:x} 0x{1:x}", reader.BaseStream.Position, subFields.Count));
                 }
 
                 if (line.EndsWith("--")) break;

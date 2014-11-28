@@ -10,38 +10,31 @@ namespace WebServer
 {
     public static class Extensions
     {
-        public static String GetBodyString(this HttpListenerRequest request, Encoding encoding = null)
+        public static String ReadBodyString(this HttpListenerRequest request, Encoding encoding = null)
         {
             encoding = encoding ?? Encoding.ASCII;
 
-            var pos = request.InputStream.Position;
-
-            request.InputStream.Seek(0, SeekOrigin.Begin);
-            var str = new StreamReader(request.InputStream, encoding).ReadToEnd();
-            request.InputStream.Seek(pos, SeekOrigin.Begin);
-
-            return str;
+            using (var reader = new StreamReader(request.InputStream, encoding)) {
+                return reader.ReadToEnd();
+            }
         }
 
-        public static NameValueCollection GetParsedBody(this HttpListenerRequest request)
+        public static NameValueCollection ReadParsedBody(this HttpListenerRequest request)
         {
-            return HttpUtility.ParseQueryString(request.GetBodyString());
+            return HttpUtility.ParseQueryString(request.ReadBodyString());
         }
 
-        public static MultipartFormField GetMultipartForm(this HttpListenerRequest request)
+        public static MultipartFormField ReadMultipartForm(this HttpListenerRequest request)
         {
             if (request.ContentType == null) throw new NullReferenceException("Request content type was null.");
 
             var headers = request.Headers.AllKeys.ToDictionary(
                 x => x, x => FormFieldHeader.Parse(request.Headers[x]));
 
-            var pos = request.InputStream.Position;
-
-            request.InputStream.Seek(0, SeekOrigin.Begin);
-            var fields = new MultipartFormField(headers, request.InputStream);
-            request.InputStream.Seek(pos, SeekOrigin.Begin);
-
-            return fields;
+            using (var copy = new MemoryStream()) {
+                request.InputStream.CopyTo(copy);
+                return new MultipartFormField(headers, request.InputStream);
+            }
         }
     }
 }

@@ -201,11 +201,13 @@ namespace WebServer
 
         private static String ReadLine(Stream stream, byte[] buffer)
         {
-            var line = String.Empty;
+            String line = null;
 
             int read;
             while ((read = stream.Read(buffer, 0, 128)) > 0) {
                 var part = Encoding.ASCII.GetString(buffer, 0, read);
+
+                line = line ?? String.Empty;
 
                 if (part.Contains("\r\n") || line.Length > 0 && line[line.Length - 1] == '\r' && part[0] == '\n') {
                     var index = part.IndexOf("\r\n");

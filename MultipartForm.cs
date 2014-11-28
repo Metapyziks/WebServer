@@ -2,9 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Mime;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -190,13 +192,17 @@ namespace WebServer
 
             var subFields = new List<FormField>();
 
+            var log = new StringBuilder();
+
             var line = reader.ReadLine();
             while (true) {
                 if (line == null || !line.StartsWith(String.Format("--{0}", Boundary))) {
-                    throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x{0:x} 0x{1:x}", reader.BaseStream.Position, subFields.Count));
+                    throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x{0:x} 0x{1:x}", reader.BaseStream.Position, log.ToString()));
                 }
 
                 if (line.EndsWith("--")) break;
+
+                log.AppendLine(line);
 
                 headerDict.Clear();
 
@@ -204,19 +210,29 @@ namespace WebServer
                 while (!String.IsNullOrWhiteSpace(headerLine = reader.ReadLine())) {
                     var keyVal = FormFieldHeader.ParseKeyValue(headerLine);
                     if (keyVal.Key == null || keyVal.Value == null) {
-                        throw new HttpException(400, GetFormatExceptionMessage(0x11, "0x" + reader.BaseStream.Position.ToString("x")));
+                        throw new HttpException(400, GetFormatExceptionMessage(0x11, "0x{0:x} 0x{1:x}", reader.BaseStream.Position, log.ToString()));
                     }
 
                     headerDict.Add(keyVal.Key, keyVal.Value);
+
+                    log.AppendFormat("{0}: {1}", keyVal.Key, keyVal.Value.Value);
+                    log.AppendLine();
                 }
 
                 var start = reader.BaseStream.Position;
                 var end = reader.BaseStream.Position;
+
+                log.AppendFormat("Start: {0}", start);
+                log.AppendLine();
+
                 while ((line = reader.ReadLine()) != null) {
                     if (!line.StartsWith(String.Format("--{0}", Boundary))) {
                         end = reader.BaseStream.Position;
                         continue;
                     }
+
+                    log.AppendFormat("End: {0}", end);
+                    log.AppendLine();
 
                     reader.BaseStream.Position = start;
                     subFields.Add(Create(headerDict, new FrameStream(stream, start, end - start)));

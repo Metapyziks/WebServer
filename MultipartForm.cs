@@ -185,7 +185,7 @@ namespace WebServer
         public MultipartFormField(IDictionary<String, FormFieldHeader> headers, Stream stream)
             : base(headers)
         {
-            var reader = new StreamReader(stream, System.Text.Encoding.ASCII, false, 0, true);
+            var reader = new StreamReader(stream, System.Text.Encoding.ASCII, false, 128, true);
             var headerDict = new Dictionary<String, FormFieldHeader>();
 
             var subFields = new List<FormField>();

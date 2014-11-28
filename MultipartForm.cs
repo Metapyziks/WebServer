@@ -193,7 +193,7 @@ namespace WebServer
             var line = reader.ReadLine();
             while (true) {
                 if (line == null || !line.StartsWith(String.Format("--{0}", Boundary))) {
-                    throw new HttpException(400, GetFormatExceptionMessage(0x10, line));
+                    throw new HttpException(400, GetFormatExceptionMessage(0x10, "0x" + reader.BaseStream.Position.ToString("x")));
                 }
 
                 if (line.EndsWith("--")) break;
@@ -204,7 +204,7 @@ namespace WebServer
                 while (!String.IsNullOrWhiteSpace(headerLine = reader.ReadLine())) {
                     var keyVal = FormFieldHeader.ParseKeyValue(headerLine);
                     if (keyVal.Key == null || keyVal.Value == null) {
-                        throw new HttpException(400, GetFormatExceptionMessage(0x11, line));
+                        throw new HttpException(400, GetFormatExceptionMessage(0x11, "0x" + reader.BaseStream.Position.ToString("x")));
                     }
 
                     headerDict.Add(keyVal.Key, keyVal.Value);
@@ -218,7 +218,9 @@ namespace WebServer
                         continue;
                     }
 
+                    reader.BaseStream.Position = start;
                     subFields.Add(Create(headerDict, new FrameStream(stream, start, end - start)));
+                    reader.BaseStream.Position = end;
                 }
             }
 

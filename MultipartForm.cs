@@ -246,6 +246,8 @@ namespace WebServer
                 }
             }
 
+            throw new Exception(log.ToString());
+
             _subFields = subFields.ToArray();
         }
 

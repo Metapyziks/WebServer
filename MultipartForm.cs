@@ -213,7 +213,7 @@ namespace WebServer
                     var index = part.IndexOf("\r\n");
                     stream.Seek(stream.Position - read + index + 2, SeekOrigin.Begin);
 
-                    return String.Concat(line, part).Substring(line.Length + index);
+                    return String.Concat(line, part).Substring(0, line.Length + index);
                 }
 
                 line = String.Concat(line, part);

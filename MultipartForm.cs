@@ -221,11 +221,9 @@ namespace WebServer
 
                 total += i;
 
-                if (i < 0) {
-                    line = line.Substring(0, line.Length - 1);
-                } else {
-                    line = String.Concat(line, Encoding.ASCII.GetString(buffer, 0, i));
-                }
+                line = i < 0
+                    ? line.Substring(0, line.Length - 1)
+                    : String.Concat(line, Encoding.ASCII.GetString(buffer, 0, i));
 
                 if (i < read) break;
             }
@@ -263,8 +261,11 @@ namespace WebServer
 
                 headerDict.Clear();
 
+                log.AppendLine("Before header: " + stream.Position.ToString("x"));
+
                 String headerLine;
                 while (!String.IsNullOrWhiteSpace(headerLine = ReadLine(stream, readlineBuffer))) {
+                    log.AppendLine("After header: " + stream.Position.ToString("x"));
                     log.AppendLine("H: " + headerLine);
 
                     var keyVal = FormFieldHeader.ParseKeyValue(headerLine);

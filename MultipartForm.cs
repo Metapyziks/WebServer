@@ -205,22 +205,34 @@ namespace WebServer
 
             var start = stream.Position;
 
+            var total = 0;
+            var prev = '\0';
+
             int read;
             while ((read = stream.Read(buffer, 0, 128)) > 0) {
-                var part = Encoding.ASCII.GetString(buffer, 0, read);
-
-                if (part.Contains("\r\n") || line.Length > 0 && line[line.Length - 1] == '\r' && part[0] == '\n') {
-                    var index = part.IndexOf("\r\n");
-                    line = String.Concat(line, part).Substring(0, line.Length + index);
-                    break;
+                int i;
+                for (i = 0; i < read; ++i) {
+                    var curr = (char) buffer[i];
+                    if (prev == '\r' && curr == '\n') {
+                        --i; break;
+                    }
+                    prev = curr;
                 }
 
-                line = String.Concat(line, part);
+                total += i;
+
+                if (i < 0) {
+                    line = line.Substring(0, line.Length - 1);
+                } else {
+                    line = String.Concat(line, Encoding.ASCII.GetString(buffer, 0, i));
+                }
+
+                if (i < read) break;
             }
 
             if (stream.Position == start) return null;
 
-            stream.Seek(Math.Min(stream.Length, start + line.Length + 2), SeekOrigin.Begin);
+            stream.Seek(Math.Min(stream.Length, start + total + 2), SeekOrigin.Begin);
 
             return line;
         }

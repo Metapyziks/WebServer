@@ -7,7 +7,7 @@ namespace WebServer
 {
     public class DefaultResourceServlet : Servlet
     {
-        private static readonly Dictionary<String, String> _sContentTypes = new Dictionary<string,string>() {
+        public static readonly Dictionary<String, String> ContentTypes = new Dictionary<string,string>() {
             { ".css", "text/css" },
             { ".js", "application/javascript" },
             { ".xml", "application/xml" },
@@ -55,8 +55,8 @@ namespace WebServer
                 var path = Path.GetFullPath(ResourceDirectory + "/" + url);
                 var ext = Path.GetExtension(path);
 
-                if (_sContentTypes.ContainsKey(ext) && File.Exists(path)) {
-                    Response.ContentType = _sContentTypes[ext];
+                if (ContentTypes.ContainsKey(ext) && File.Exists(path)) {
+                    Response.ContentType = ContentTypes[ext];
 
                     if (EnableCaching) {
                         Response.AddHeader("ETag", VersionNonce);

@@ -10,6 +10,14 @@ namespace WebServer
 {
     public static class Extensions
     {
+        public static String[] GetUrlSegments(this HttpListenerRequest request)
+        {
+            return request.Url.Segments
+                .Select(x => x.TrimEnd('/'))
+                .Where(x => x.Length > 0)
+                .ToArray();
+        }
+
         public static String ReadBodyString(this HttpListenerRequest request, Encoding encoding = null)
         {
             encoding = encoding ?? Encoding.ASCII;

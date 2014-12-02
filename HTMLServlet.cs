@@ -115,7 +115,7 @@ namespace WebServer
             return Format("<!DOCTYPE {0}>{1}", String.Join(" ", args), Environment.NewLine);
         }
 
-        protected Tag D(Action body)
+        protected Tag T(Action body)
         {
             var sb = new StringBuilder();
             var oldWrite = Write;

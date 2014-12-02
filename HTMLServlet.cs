@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -44,6 +45,11 @@ namespace WebServer
         protected Tag Ln
         {
             get { return EmptyTag("br"); }
+        }
+
+        protected Tag Nbsp
+        {
+            get { return new Tag("&nbsp;"); }
         }
 
         protected override bool OnPreService()

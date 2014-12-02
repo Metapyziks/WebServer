@@ -21,14 +21,14 @@ namespace WebServer
 
             Write(
                 DocType("html"),
-                Tag("html", lang => "en", another => "blah")(
-                    Tag("head")(
-                        Tag("title")(Format("Error {0}", Response.StatusCode))
+                T("html", lang => "en", another => "blah")(
+                    T("head")(
+                        T("title")(Format("Error {0}", Response.StatusCode))
                     ),
-                    Tag("body")(
-                        Tag("p")(
+                    T("body")(
+                        T("p")(
                             _sErrorCodes.ContainsKey(Response.StatusCode) ? _sErrorCodes[Response.StatusCode] : "An error has occurred.", Ln,
-                            Tag("code")(Request.RawUrl)
+                            T("code")(Request.RawUrl)
                         )
                     )
                 )

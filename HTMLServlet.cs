@@ -9,14 +9,39 @@ namespace WebServer
 {
     public abstract class HTMLServlet : Servlet
     {
+        public class Tag
+        {
+            public static implicit operator Tag(String value)
+            {
+                return new Tag(value);
+            }
+
+            public static Tag operator +(Tag a, Tag b)
+            {
+                return new Tag(a.Value + b.Value);
+            }
+
+            public String Value { get; set; }
+
+            public Tag(String value)
+            {
+                Value = value;
+            }
+            
+            public override string ToString()
+            {
+                return Value;
+            }
+        }
+
         public delegate void WriteDelegate(params Object[] body);
-        public delegate String BodyDelegate(params Object[] body);
+        public delegate Tag BodyDelegate(params Object[] body);
 
         private StreamWriter _streamWriter;
 
         protected WriteDelegate Write { get; private set; }
 
-        protected String Ln
+        protected Tag Ln
         {
             get { return EmptyTag("br"); }
         }
@@ -63,28 +88,28 @@ namespace WebServer
             return String.Format(format, args);
         }
 
-        protected String EmptyTag(String name, params Expression<Func<String, Object>>[] attributes)
+        protected Tag EmptyTag(String name, params Expression<Func<String, Object>>[] attributes)
         {
             var attribsJoined = JoinAttributes(attributes);
             return String.Format("<{0}{1} />", name, attribsJoined);
         }
 
-        protected BodyDelegate Tag(String name, params Expression<Func<String, Object>>[] attributes)
+        protected BodyDelegate T(String name, params Expression<Func<String, Object>>[] attributes)
         {
             var attribsJoined = JoinAttributes(attributes);
             return (body) => {
                 var bodyJoined = String.Join(String.Empty, body.Select(x =>
-                    x is BodyDelegate ? ((BodyDelegate) x)() : x));
+                    x is BodyDelegate ? ((BodyDelegate) x)() : x is Tag ? x.ToString() : Escape(x.ToString())));
                 return String.Format("<{0}{1}>{2}</{0}>", name, attribsJoined, bodyJoined);
             };
         }
 
-        protected String DocType(params String[] args)
+        protected Tag DocType(params String[] args)
         {
             return Format("<!DOCTYPE {0}>{1}", String.Join(" ", args), Environment.NewLine);
         }
 
-        protected String Dyn(Action body)
+        protected Tag D(Action body)
         {
             var sb = new StringBuilder();
             var oldWrite = Write;

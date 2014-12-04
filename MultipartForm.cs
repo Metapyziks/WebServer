@@ -101,8 +101,6 @@ namespace WebServer
             }
         }
 
-        private readonly Dictionary<String, FormFieldHeader> _headers;
-
         public String Name { get; private set; }
 
         public String ContentType { get; private set; }

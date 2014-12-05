@@ -23,7 +23,7 @@ namespace WebServer
                 DocType("html"),
                 T("html", lang => "en", another => "blah")(
                     T("head")(
-                        T("title")(Format("Error {0}", Response.StatusCode))
+                        T("title")(F("Error {0}", Response.StatusCode))
                     ),
                     T("body")(
                         T("p")(

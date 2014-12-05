@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -44,7 +45,7 @@ namespace WebServer
 
         protected Tag Ln
         {
-            get { return EmptyTag("br"); }
+            get { return E("br"); }
         }
 
         protected Tag Nbsp
@@ -72,7 +73,7 @@ namespace WebServer
             _streamWriter.Flush();
         }
 
-        private String JoinAttributes(Expression<Func<String, Object>>[] attributes)
+        private static String JoinAttributes(IEnumerable<Expression<Func<string, object>>> attributes)
         {
             var attribStrings = attributes.Select(attrib => {
                 var key = attrib.Parameters.First().Name.Replace('_', '-');
@@ -84,23 +85,23 @@ namespace WebServer
             return String.Join(String.Empty, attribStrings);
         }
 
-        protected String Escape(String str)
+        protected static String Escape(String str)
         {
             return HttpUtility.HtmlEncode(str);
         }
 
-        protected String Format(String format, params object[] args)
+        public static String F(String format, params object[] args)
         {
             return String.Format(format, args);
         }
 
-        protected Tag EmptyTag(String name, params Expression<Func<String, Object>>[] attributes)
+        public static Tag E(String name, params Expression<Func<String, Object>>[] attributes)
         {
             var attribsJoined = JoinAttributes(attributes);
             return String.Format("<{0}{1} />", name, attribsJoined);
         }
 
-        protected BodyDelegate T(String name, params Expression<Func<String, Object>>[] attributes)
+        public static BodyDelegate T(String name, params Expression<Func<String, Object>>[] attributes)
         {
             var attribsJoined = JoinAttributes(attributes);
             return (body) => {
@@ -112,7 +113,7 @@ namespace WebServer
 
         protected Tag DocType(params String[] args)
         {
-            return Format("<!DOCTYPE {0}>{1}", String.Join(" ", args), Environment.NewLine);
+            return F("<!DOCTYPE {0}>{1}", String.Join(" ", args), Environment.NewLine);
         }
 
         protected Tag T(Action body)

@@ -61,9 +61,7 @@ namespace WebServer
         protected BodyDelegate Object
         {
             get {
-                return (body) => {
-                    return "{" + String.Join(",", body) + "}";
-                };
+                return body => "{" + String.Join(",", body) + "}";
             }
         }
 
@@ -71,9 +69,7 @@ namespace WebServer
         {
             get
             {
-                return (body) => {
-                    return "[" + String.Join(",", body) + "]";
-                };
+                return body => "[" + String.Join(",", body) + "]";
             }
         }
 
@@ -81,7 +77,7 @@ namespace WebServer
         {
             var sb = new StringBuilder();
             var oldWrite = Write;
-            bool first = true;
+            var first = true;
             Write = x => {
                 foreach (var str in x) {
                     if (first) {

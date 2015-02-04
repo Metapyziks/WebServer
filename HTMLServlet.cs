@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -9,7 +8,7 @@ using System.Web;
 
 namespace WebServer
 {
-    public abstract class HTMLServlet : Servlet
+    public abstract class HtmlServlet : Servlet
     {
         public class Tag
         {

@@ -106,7 +106,7 @@ namespace WebServer
         {
             var types = assembly.GetTypes()
                 .Where(x => typeof(Servlet).IsAssignableFrom(x))
-                .Where(x => x.GetCustomAttributes<ServletURLAttribute>().Any());
+                .Where(x => x.GetCustomAttributes<ServletUrlAttribute>().Any());
 
             foreach (var type in types) {
                 BindServletToURL(type);
@@ -121,13 +121,13 @@ namespace WebServer
 
         public void BindServletToURL(Type t)
         {
-            var attribs = t.GetCustomAttributes<ServletURLAttribute>();
+            var attribs = t.GetCustomAttributes<ServletUrlAttribute>();
 
             if (!attribs.Any()) {
                 throw new InvalidOperationException("Servlet class must have a ServletURLAttribute");
             }
 
-            foreach (var url in attribs.SelectMany(x => x.URLs)) {
+            foreach (var url in attribs.SelectMany(x => x.Urls)) {
                 BindServletToURL(t, url);
             }
         }

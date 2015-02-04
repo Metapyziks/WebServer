@@ -49,7 +49,7 @@ namespace WebServer
 
                 var url = Request.Url.LocalPath;
                 if (url.StartsWith(Server.ResourceRootUrl)) {
-                    url = URLRelativeTo(url, Server.ResourceRootUrl);
+                    url = UrlRelativeTo(url, Server.ResourceRootUrl);
                 }
 
                 var path = Path.GetFullPath(ResourceDirectory + "/" + url);

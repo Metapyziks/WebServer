@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace WebServer
 {
-    public class DefaultErrorServlet : HTMLServlet
+    public class DefaultErrorServlet : HtmlServlet
     {
         private static readonly Dictionary<int, String> _sErrorCodes = new Dictionary<int, string> {
             { 400, "The URL you requested could not be understood."},

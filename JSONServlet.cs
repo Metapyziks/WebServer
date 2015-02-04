@@ -5,7 +5,7 @@ using System.Text;
 
 namespace WebServer
 {
-    public abstract class JSONServlet : Servlet
+    public abstract class JsonServlet : Servlet
     {
         public delegate void WriteDelegate(params Object[] body);
         public delegate String BodyDelegate(params Object[] body);

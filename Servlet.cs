@@ -4,19 +4,19 @@ using System.Net;
 namespace WebServer
 {
     [AttributeUsage(AttributeTargets.Class)]
-    public class ServletURLAttribute : Attribute
+    public class ServletUrlAttribute : Attribute
     {
-        public String[] URLs { get; private set; }
+        public String[] Urls { get; private set; }
 
-        public ServletURLAttribute(params String[] urls)
+        public ServletUrlAttribute(params String[] urls)
         {
-            URLs = urls;
+            Urls = urls;
         }
     }
 
     public abstract class Servlet
     {
-        protected static String[] SplitURL(String url)
+        protected static String[] SplitUrl(String url)
         {
             if (url.Length == 0) return new String[0];
 
@@ -32,7 +32,7 @@ namespace WebServer
             return url.Split('/');
         }
 
-        protected static String URLRelativeTo(String url, String root)
+        protected static String UrlRelativeTo(String url, String root)
         {
             int length = root.EndsWith("/") || url.Length <= root.Length ? root.Length : root.Length + 1;
             return url.Substring(length);

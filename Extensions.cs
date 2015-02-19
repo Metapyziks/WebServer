@@ -45,5 +45,10 @@ namespace WebServer
                 return new MultipartFormField(new FormField.HeaderCollection(headers), copy);
             }
         }
+
+        public static ulong ToUnixTimestamp(this DateTime time)
+        {
+            return (ulong) (time - new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+        }
     }
 }

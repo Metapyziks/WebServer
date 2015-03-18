@@ -51,9 +51,13 @@ namespace WebServer
 
             var server = (Server) state;
             try {
+#if DEBUG
                 server.Log("Performing {0}", Identifier);
+#endif
                 _job(server);
+#if DEBUG
                 server.Log("Completed {0}", Identifier);
+#endif
             } catch (Exception e) {
                 server.Log(e);
             }

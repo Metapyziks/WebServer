@@ -99,7 +99,8 @@ namespace WebServer
                     }
 
                     if (Request.HttpMethod != "HEAD") {
-                        using (var stream = File.OpenRead(path)) {
+                        using (var stream = File.Open(path, FileMode.Open, FileAccess.Read)) {
+                            min = Math.Max(min, 0);
                             max = Math.Min(max, (int) stream.Length);
 
                             Response.ContentLength64 = max - min;
@@ -107,9 +108,10 @@ namespace WebServer
                             if (usingRange) {
                                 Response.StatusCode = 206;
                                 Response.Headers.Add("Content-Range", string.Format("bytes {0}-{1}/{2}", min, max, stream.Length));
+
+                                stream.Seek(min, SeekOrigin.Begin);
                             }
 
-                            stream.Seek(min, SeekOrigin.Begin);
                             CopyTo(stream, Response.OutputStream, max - min);
                             stream.Flush();
                         }

@@ -102,7 +102,7 @@ namespace WebServer
                         Response.KeepAlive = true;
                         Response.AddHeader("Connection", "keep-alive");
 
-                        using (var stream = File.Open(path, FileMode.Open, FileAccess.Read)) {
+                        using (var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read)) {
                             min = Math.Max(min, 0);
                             max = Math.Min(max, (int) stream.Length - 1);
                             

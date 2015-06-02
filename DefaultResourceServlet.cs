@@ -99,6 +99,7 @@ namespace WebServer
                     }
 
                     if (Request.HttpMethod != "HEAD") {
+                        Response.KeepAlive = true;
                         Response.AddHeader("Connection", "keep-alive");
 
                         using (var stream = File.Open(path, FileMode.Open, FileAccess.Read)) {
@@ -108,7 +109,7 @@ namespace WebServer
                             try {
                                 if (usingRange) {
                                     Response.StatusCode = 206;
-                                    Response.Headers.Add("Content-Range", string.Format("bytes {0}-{1}/{2}", min, max, stream.Length));
+                                    Response.Headers.Add("Content-Range", string.Format("bytes {0}-{1}/{2}", min, max - 1, stream.Length));
                                     Response.ContentLength64 = max - min;
                                     stream.Seek(min, SeekOrigin.Begin);
                                 }

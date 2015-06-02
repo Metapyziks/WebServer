@@ -112,8 +112,11 @@ namespace WebServer
                                 stream.Seek(min, SeekOrigin.Begin);
                             }
 
-                            CopyTo(stream, Response.OutputStream, max - min);
-                            stream.Flush();
+                            try {
+                                CopyTo(stream, Response.OutputStream, max - min);
+                            } catch {
+                                return;
+                            }
                         }
                     } else {
                         var info = new FileInfo(path);

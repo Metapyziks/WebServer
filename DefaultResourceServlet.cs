@@ -120,9 +120,18 @@ namespace WebServer
                         }
                     } else {
                         var info = new FileInfo(path);
+                        min = Math.Max(min, 0);
                         max = Math.Min(max, (int) info.Length);
+
                         Response.ContentLength64 = max - min;
+
+                        if (usingRange) {
+                            Response.StatusCode = 206;
+                            Response.Headers.Add("Content-Range",
+                                string.Format("bytes {0}-{1}/{2}", min, max, info.Length));
+                        }
                     }
+
                     return;
                 }
             }

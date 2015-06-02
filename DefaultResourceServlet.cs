@@ -8,7 +8,7 @@ namespace WebServer
 {
     public class DefaultResourceServlet : Servlet
     {
-        private const int DefaultCopyBufferSize = 2048;
+        private const int DefaultCopyBufferSize = 8192;
         
         [ThreadStatic]
         private static byte[] _sDefaultCopyBuffer;

@@ -99,7 +99,7 @@ namespace WebServer
                     }
 
                     if (Request.HttpMethod != "HEAD") {
-                        Response.KeepAlive = true;
+                        Response.AddHeader("Connection", "keep-alive");
 
                         using (var stream = File.Open(path, FileMode.Open, FileAccess.Read)) {
                             min = Math.Max(min, 0);

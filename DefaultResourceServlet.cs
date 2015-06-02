@@ -83,18 +83,22 @@ namespace WebServer
                     }
 
                     int min = 0, max = int.MaxValue;
+                    var usingRange = false;
 
                     var rangeHeader = Request.Headers["Range"];
                     if (rangeHeader != null && rangeHeader.StartsWith("bytes=")) {
                         rangeHeader = rangeHeader.Substring("bytes=".Length);
                         var split = rangeHeader.Split('-');
                         if (split.Length == 2) {
+                            usingRange = true;
                             if (split[0].Length > 0) int.TryParse(split[0], out min);
                             if (split[1].Length > 0) int.TryParse(split[1], out max);
                         }
                     }
 
                     if (Request.HttpMethod != "HEAD") {
+                        if (usingRange) Response.StatusCode = 206;
+
                         using (var stream = File.OpenRead(path)) {
                             max = Math.Min(max, (int) stream.Length);
                             Response.ContentLength64 = max - min;

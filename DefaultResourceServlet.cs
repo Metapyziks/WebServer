@@ -58,6 +58,8 @@ namespace WebServer
 
         protected override void OnService()
         {
+            Response.Headers.Add("Accept-Ranges", "bytes");
+
             if (ResourceDirectory != null) {
                 if (EnableCaching) {
                     var etag = Request.Headers["If-None-Match"];

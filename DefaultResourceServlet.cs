@@ -104,17 +104,17 @@ namespace WebServer
 
                         using (var stream = File.Open(path, FileMode.Open, FileAccess.Read)) {
                             min = Math.Max(min, 0);
-                            max = Math.Min(max, (int) stream.Length);
+                            max = Math.Min(max, (int) stream.Length - 1);
                             
                             try {
                                 if (usingRange) {
                                     Response.StatusCode = 206;
-                                    Response.Headers.Add("Content-Range", string.Format("bytes {0}-{1}/{2}", min, max - 1, stream.Length));
-                                    Response.ContentLength64 = max - min;
+                                    Response.Headers.Add("Content-Range", string.Format("bytes {0}-{1}/{2}", min, max, stream.Length));
+                                    Response.ContentLength64 = max - min + 1;
                                     stream.Seek(min, SeekOrigin.Begin);
                                 }
 
-                                CopyTo(stream, Response.OutputStream, max - min);
+                                CopyTo(stream, Response.OutputStream, max - min + 1);
 
                             } catch {
                                 return;
@@ -123,9 +123,9 @@ namespace WebServer
                     } else {
                         var info = new FileInfo(path);
                         min = Math.Max(min, 0);
-                        max = Math.Min(max, (int) info.Length);
+                        max = Math.Min(max, (int) info.Length - 1);
 
-                        Response.ContentLength64 = max - min;
+                        Response.ContentLength64 = max - min + 1;
 
                         if (usingRange) {
                             Response.StatusCode = 206;

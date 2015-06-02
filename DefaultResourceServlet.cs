@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace WebServer
@@ -63,8 +64,14 @@ namespace WebServer
                         Response.AddHeader("ETag", VersionNonce);
                     }
 
+                    var rangeHeader = Request.Headers["Range"];
+                    if (rangeHeader != null) {
+                        Server.Log("Range: {0}", rangeHeader);
+                    }
+
                     if (Request.HttpMethod != "HEAD") {
                         using (var stream = File.OpenRead(path)) {
+
                             Response.ContentLength64 = stream.Length;
 
                             stream.CopyTo(Response.OutputStream);

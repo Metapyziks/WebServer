@@ -107,12 +107,12 @@ namespace WebServer
                                 if (usingRange) {
                                     Response.StatusCode = 206;
                                     Response.Headers.Add("Content-Range", string.Format("bytes {0}-{1}/{2}", min, max, stream.Length));
+                                    Response.ContentLength64 = max - min;
                                 }
 
                                 stream.Seek(min, SeekOrigin.Begin);
                                 CopyTo(stream, Response.OutputStream, max - min);
 
-                                Response.ContentLength64 = max - min;
                             } catch {
                                 return;
                             }

@@ -19,7 +19,8 @@ namespace WebServer
             { ".txt", "text/plain" },
             { ".log", "text/plain" },
             { ".zip", "application/zip" },
-            { ".gz", "application/x-gzip" }
+            { ".gz", "application/x-gzip" },
+            { ".mp4", "video/mp4" }
         };
 
         public static DateTime VersionDate { get; private set; }

@@ -27,8 +27,11 @@ namespace WebServer
         }
 
         public static readonly Dictionary<String, String> ContentTypes = new Dictionary<string,string>() {
+            { ".html", "text/html" },
             { ".css", "text/css" },
             { ".js", "application/javascript" },
+            { ".json", "application/javascript" },
+            { ".map", "text/plain" },
             { ".xml", "application/xml" },
             { ".png", "image/png" },
             { ".jpg", "image/jpeg" },

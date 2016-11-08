@@ -80,6 +80,12 @@ namespace WebServer
                 var path = Path.GetFullPath(resourceDir + "/" + url);
                 var ext = Path.GetExtension(path);
 
+                if ( string.IsNullOrEmpty( ext ) )
+                {
+                    path += "/index.html";
+                    ext = ".html";
+                }
+
                 if (ContentTypes.ContainsKey(ext) && File.Exists(path)) {
                     Response.ContentType = ContentTypes[ext];
 

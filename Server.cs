@@ -174,7 +174,7 @@ namespace WebServer
 
             var ctor = ResourceRootUrl == "/" ? _resourceServlet : _notFoundServlet;
             do {
-                var match = _boundServlets.First(x => x.Key.IsMatch( url ));
+                var match = _boundServlets.FirstOrDefault(x => x.Key.IsMatch( url ));
                 if (match.Key != null) {
                     ctor = match.Value;
                     break;

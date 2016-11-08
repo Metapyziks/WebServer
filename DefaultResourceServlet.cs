@@ -59,11 +59,11 @@ namespace WebServer
         public static String ResourceDirectory { get; set; }
         public static bool EnableCaching { get; set; }
 
-        protected override void OnService()
+        protected void Service( string resourceRootUrl, string resourceDir )
         {
             Response.Headers.Add("Accept-Ranges", "bytes");
 
-            if (ResourceDirectory != null) {
+            if (resourceDir != null) {
                 if (EnableCaching) {
                     var etag = Request.Headers["If-None-Match"];
                     if (etag != null && etag.Equals(VersionNonce)) {
@@ -73,11 +73,11 @@ namespace WebServer
                 }
 
                 var url = Request.Url.LocalPath;
-                if (url.StartsWith(Server.ResourceRootUrl)) {
-                    url = UrlRelativeTo(url, Server.ResourceRootUrl);
+                if (url.StartsWith(resourceRootUrl)) {
+                    url = UrlRelativeTo(url, resourceRootUrl);
                 }
 
-                var path = Path.GetFullPath(ResourceDirectory + "/" + url);
+                var path = Path.GetFullPath(resourceDir + "/" + url);
                 var ext = Path.GetExtension(path);
 
                 if (ContentTypes.ContainsKey(ext) && File.Exists(path)) {
@@ -142,6 +142,11 @@ namespace WebServer
             }
 
             Server.CreateErrorServlet().Service(Request, Response);
+        }
+
+        protected override void OnService()
+        {
+            Service( Server.ResourceRootUrl, ResourceDirectory );
         }
     }
 }

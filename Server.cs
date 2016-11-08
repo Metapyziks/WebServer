@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace WebServer
@@ -25,7 +26,7 @@ namespace WebServer
 
     public class Server
     {
-        private readonly Dictionary<String, Func<Servlet>> _boundServlets;
+        private readonly Dictionary<Regex, Func<Servlet>> _boundServlets;
         private readonly LinkedList<ScheduledJob> _scheduledJobs;
 
         private readonly AutoResetEvent _scheduledJobHandle;
@@ -48,7 +49,7 @@ namespace WebServer
 
         public Server()
         {
-            _boundServlets = new Dictionary<String, Func<Servlet>>();
+            _boundServlets = new Dictionary<Regex, Func<Servlet>>();
             _scheduledJobs = new LinkedList<ScheduledJob>();
 
             _scheduledJobHandle = new AutoResetEvent(false);
@@ -132,15 +133,20 @@ namespace WebServer
             }
         }
 
+        private static Regex CreateRegex( string url )
+        {
+            return new Regex( string.Format( @"^{0}$", url.Replace( "*", "([a-z0-9_.~+-]|%[0-9a-f][0-9a-f])+" ) ), RegexOptions.Compiled | RegexOptions.IgnoreCase );
+        }
+
         public void BindServletToURL<T>(String url)
             where T : Servlet
         {
-            _boundServlets.Add(url, GetServletCtor(typeof(T)));
+            _boundServlets.Add(CreateRegex(url), GetServletCtor(typeof(T)));
         }
 
         public void BindServletToURL(Type t, String url)
         {
-            _boundServlets.Add(url, GetServletCtor(t));
+            _boundServlets.Add(CreateRegex( url ), GetServletCtor(t));
         }
 
         public void SetErrorServlet<T>()
@@ -168,8 +174,9 @@ namespace WebServer
 
             var ctor = ResourceRootUrl == "/" ? _resourceServlet : _notFoundServlet;
             do {
-                if (_boundServlets.ContainsKey(url)) {
-                    ctor = _boundServlets[url];
+                var match = _boundServlets.First(x => x.Key.IsMatch( url ));
+                if (match.Key != null) {
+                    ctor = match.Value;
                     break;
                 } else if (url == ResourceRootUrl) {
                     ctor = _resourceServlet;

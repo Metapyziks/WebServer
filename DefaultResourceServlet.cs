@@ -30,6 +30,7 @@ namespace WebServer
             { ".html", "text/html" },
             { ".css", "text/css" },
             { ".js", "application/javascript" },
+            { ".ts", "text/x.typescript" },
             { ".json", "application/javascript" },
             { ".map", "text/plain" },
             { ".xml", "application/xml" },

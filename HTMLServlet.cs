@@ -110,6 +110,11 @@ namespace WebServer
             };
         }
 
+        protected Tag Script( params string[] args )
+        {
+            return new Tag( string.Join( "\r\n", args ) );
+        }
+
         protected Tag DocType(params String[] args)
         {
             return F("<!DOCTYPE {0}>{1}", String.Join(" ", args), Environment.NewLine);

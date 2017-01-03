@@ -52,7 +52,7 @@ namespace WebServer
                 if (OnPreService()) {
                     OnService();
                     OnPostService();
-                } else {
+                } else if (Response.StatusCode == 200) {
                     Server.CreateErrorServlet().Service(request, response);
                 }
             } catch (Exception e) {
